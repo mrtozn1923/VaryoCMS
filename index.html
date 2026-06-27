@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Varyo CMS — Multi-Tenant, Multilingual Dynamic CMS</title>
+  <meta name="description" content="Multi-tenant, multilingual Dynamic Content Management System built with ASP.NET Core 8, Dapper, and SQL Server. Clean Architecture, 30+ field types, Public REST API." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── CSS Variables ─────────────────────────────────────── */
+    :root {
+      --bg-base:        #0d1117;
+      --bg-surface:     #131a26;
+      --bg-card:        #1a2235;
+      --bg-card-hover:  #1e2840;
+      --bg-code:        #111827;
+      --border:         rgba(99, 102, 241, 0.15);
+      --border-subtle:  rgba(255, 255, 255, 0.06);
+
+      --indigo:         #6366f1;
+      --indigo-light:   #818cf8;
+      --indigo-dark:    #4f46e5;
+      --purple:         #a855f7;
+      --teal:           #2dd4bf;
+      --emerald:        #34d399;
+      --amber:          #fbbf24;
+      --rose:           #f87171;
+      --sky:            #38bdf8;
+
+      --text-primary:   #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted:     #64748b;
+      --text-code:      #e2e8f0;
+
+      --radius-sm:  6px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --radius-xl:  28px;
+
+      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.18);
+
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ─── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; }
+
+    /* ─── Layout helpers ────────────────────────────────────── */
+    .container {
+      width: 100%;
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    section { padding: 96px 0; }
+    section + section { border-top: 1px solid var(--border-subtle); }
+
+    /* ─── Typography ────────────────────────────────────────── */
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--indigo-light);
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+    }
+    .section-subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 620px;
+      line-height: 1.7;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .section-header .section-subtitle { margin: 0 auto; }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--indigo-light) 0%, var(--purple) 50%, var(--teal) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── Buttons ────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 26px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--indigo) 0%, var(--indigo-dark) 100%);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--indigo-light) 0%, var(--indigo) 100%);
+      box-shadow: 0 6px 28px rgba(99, 102, 241, 0.55);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-card);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* ─── NAV ────────────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(13, 17, 23, 0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .nav-logo-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      font-size: 17px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: color var(--transition);
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-github {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .nav-github:hover { color: var(--text-primary); border-color: rgba(99,102,241,0.4); }
+
+    /* ─── HERO ───────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 140px 24px 100px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 85% 60%, rgba(168,85,247,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 10% 70%, rgba(45,212,191,0.08) 0%, transparent 60%);
+    }
+    .hero-mesh {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 0%, black 0%, transparent 80%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--indigo-light);
+      margin-bottom: 32px;
+      animation: fadeInDown 0.6s ease both;
+    }
+    .hero-badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); display: inline-block; animation: pulse 2s ease infinite; }
+    .hero-title {
+      font-size: clamp(42px, 7vw, 80px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      margin-bottom: 28px;
+      animation: fadeInDown 0.6s 0.1s ease both;
+    }
+    .hero-tagline {
+      font-size: clamp(17px, 2.5vw, 21px);
+      color: var(--text-secondary);
+      max-width: 620px;
+      margin: 0 auto 48px;
+      line-height: 1.65;
+      animation: fadeInDown 0.6s 0.2s ease both;
+    }
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      animation: fadeInDown 0.6s 0.3s ease both;
+    }
+    .hero-stack {
+      margin-top: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      animation: fadeInDown 0.6s 0.4s ease both;
+    }
+    .hero-stack-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+    .tech-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .hero-scroll {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      animation: bounce 2s ease infinite;
+    }
+
+    /* ─── FEATURE GRID ───────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(99,102,241,0.08) 0%, transparent 65%);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(99,102,241,0.3);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+    }
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+    .feature-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .feature-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* Icon backgrounds */
+    .icon-indigo { background: rgba(99,102,241,0.15); }
+    .icon-purple { background: rgba(168,85,247,0.15); }
+    .icon-teal   { background: rgba(45,212,191,0.15); }
+    .icon-amber  { background: rgba(251,191,36,0.15); }
+    .icon-rose   { background: rgba(248,113,113,0.15); }
+    .icon-sky    { background: rgba(56,189,248,0.15); }
+
+    /* ─── ARCHITECTURE ───────────────────────────────────────── */
+    .arch-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .arch-layer {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      transition: var(--transition);
+    }
+    .arch-layer:hover {
+      border-color: rgba(99,102,241,0.35);
+      background: var(--bg-card-hover);
+      transform: scaleX(1.01);
+    }
+    .arch-layer-name {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .arch-layer-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: right;
+      max-width: 320px;
+    }
+    .arch-arrow {
+      height: 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+    .arch-arrow-line {
+      width: 2px;
+      height: 20px;
+      background: linear-gradient(180deg, rgba(99,102,241,0.6) 0%, rgba(99,102,241,0.2) 100%);
+    }
+    .arch-arrow-head {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid rgba(99,102,241,0.6);
+    }
+    .arch-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .arch-badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+    .ab-indigo { background: rgba(99,102,241,0.15); color: var(--indigo-light); }
+    .ab-purple { background: rgba(168,85,247,0.15); color: #c084fc; }
+    .ab-teal   { background: rgba(45,212,191,0.15); color: var(--teal); }
+    .ab-sky    { background: rgba(56,189,248,0.15); color: var(--sky); }
+
+    /* ─── FIELD TYPES ────────────────────────────────────────── */
+    .field-groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .field-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 24px;
+    }
+    .field-group-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .field-group-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+    .field-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .field-chip {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 11px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: var(--transition);
+      cursor: default;
+    }
+    .field-chip:hover { transform: translateY(-1px); }
+    .chip-text    { background: rgba(99,102,241,0.1);  border-color: rgba(99,102,241,0.2);  color: var(--indigo-light); }
+    .chip-number  { background: rgba(45,212,191,0.1);  border-color: rgba(45,212,191,0.2);  color: var(--teal); }
+    .chip-date    { background: rgba(168,85,247,0.1);  border-color: rgba(168,85,247,0.2);  color: #c084fc; }
+    .chip-media   { background: rgba(251,191,36,0.1);  border-color: rgba(251,191,36,0.2);  color: var(--amber); }
+    .chip-special { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.2); color: var(--rose); }
+    .chip-relation{ background: rgba(56,189,248,0.1);  border-color: rgba(56,189,248,0.2);  color: var(--sky); }
+
+    /* ─── QUICK START ────────────────────────────────────────── */
+    .quickstart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .terminal {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .td-red   { background: #ef4444; }
+    .td-amber { background: var(--amber); }
+    .td-green { background: var(--emerald); }
+    .terminal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 8px;
+    }
+    .terminal-body {
+      padding: 28px 28px 32px;
+    }
+    .terminal-body code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.9;
+      display: block;
+    }
+    .t-comment { color: #4a5568; }
+    .t-prompt  { color: var(--indigo-light); user-select: none; }
+    .t-cmd     { color: var(--text-code); }
+    .t-flag    { color: var(--teal); }
+    .t-string  { color: var(--amber); }
+    .t-success { color: var(--emerald); }
+    .t-info    { color: var(--sky); }
+
+    .quickstart-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .qs-step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .qs-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.3);
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--indigo-light);
+      flex-shrink: 0;
+    }
+    .qs-content { flex: 1; padding-top: 4px; }
+    .qs-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .qs-desc  { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .qs-inline-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: rgba(99,102,241,0.1);
+      color: var(--indigo-light);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid rgba(99,102,241,0.2);
+    }
+
+    /* ─── API PREVIEW ────────────────────────────────────────── */
+    .api-preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 32px;
+      align-items: start;
+    }
+    .api-info { padding-top: 8px; }
+    .api-endpoint-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .http-method {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 5px;
+      background: rgba(52,211,153,0.15);
+      color: var(--emerald);
+      border: 1px solid rgba(52,211,153,0.25);
+    }
+    .api-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .api-features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .api-feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .api-feature::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--indigo-light);
+      flex-shrink: 0;
+      margin-top: 7px;
+    }
+    .code-window {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .code-window-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .code-window-dots { display: flex; gap: 8px; }
+    .code-window-lang {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(99,102,241,0.1);
+      padding: 3px 10px;
+      border-radius: 4px;
+    }
+    .code-body {
+      padding: 24px 28px 28px;
+      overflow-x: auto;
+    }
+    .code-body pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--text-code);
+    }
+    .j-key    { color: #94b4ff; }
+    .j-str    { color: #86efac; }
+    .j-num    { color: #fbbf24; }
+    .j-bool   { color: #f472b6; }
+    .j-null   { color: #94a3b8; }
+    .j-punct  { color: #64748b; }
+
+    /* ─── AUTH BADGES ────────────────────────────────────────── */
+    .auth-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .auth-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .auth-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ─── FOOTER ─────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 48px 0;
+      text-align: center;
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .footer-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+    .footer-copy {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .footer-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: color var(--transition);
+    }
+    .footer-links a:hover { color: var(--indigo-light); }
+    .footer-stack {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* ─── STATS BAR ──────────────────────────────────────────── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 80px;
+    }
+    .stat-item {
+      background: var(--bg-card);
+      padding: 28px;
+      text-align: center;
+      transition: var(--transition);
+    }
+    .stat-item:hover { background: var(--bg-card-hover); }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ─── Animations ─────────────────────────────────────────── */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(6px); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    /* ─── Scroll reveal ──────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ─── Divider ────────────────────────────────────────────── */
+    .gradient-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--indigo) 30%, var(--purple) 70%, transparent);
+      opacity: 0.3;
+      margin: 0;
+    }
+
+    /* ─── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .quickstart-grid { grid-template-columns: 1fr; }
+      .api-preview-grid { grid-template-columns: 1fr; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      section { padding: 64px 0; }
+      .hero { padding: 120px 24px 80px; }
+      .stats-bar { grid-template-columns: 1fr 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .arch-layer { flex-direction: column; gap: 10px; }
+      .arch-layer-desc { text-align: left; }
+      .field-groups { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── NAV ─────────────────────────────────────────────────── -->
+  <nav class="nav">
+    <div class="nav-logo">
+      <div class="nav-logo-icon">✦</div>
+      Varyo CMS
+    </div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#fields">Field Types</a>
+      <a href="#api">Public API</a>
+    </div>
+    <div class="nav-cta">
+      <a href="https://github.com" class="nav-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ──────────────────────────────────────────────────── -->
+  <section class="hero" id="home">
+    <div class="hero-bg"></div>
+    <div class="hero-mesh"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span></span>
+        Open Source · ASP.NET Core 8 · Production Ready
+      </div>
+      <h1 class="hero-title">
+        <span class="gradient-text">Varyo</span> CMS
+      </h1>
+      <p class="hero-tagline">
+        Multi-tenant, multilingual dynamic content management —<br>
+        built for developers who demand clean architecture.
+      </p>
+      <div class="hero-cta">
+        <a href="https://github.com" class="btn btn-primary" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          View on GitHub
+        </a>
+        <a href="#quickstart" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Read the Docs
+        </a>
+      </div>
+      <div class="hero-stack">
+        <span class="hero-stack-label">Built with</span>
+        <span class="tech-chip">🔷 ASP.NET Core 8</span>
+        <span class="tech-chip">⚡ Dapper</span>
+        <span class="tech-chip">🗄️ SQL Server</span>
+        <span class="tech-chip">🐳 Docker</span>
+        <span class="tech-chip">🏛️ Clean Architecture</span>
+      </div>
+    </div>
+    <div class="hero-scroll">
+      <span>Scroll</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </div>
+  </section>
+
+  <div class="gradient-divider"></div>
+
+  <!-- ─── STATS ──────────────────────────────────────────────────── -->
+  <section style="padding: 64px 0;" id="stats">
+    <div class="container">
+      <div class="stats-bar reveal">
+        <div class="stat-item">
+          <div class="stat-value gradient-text">30+</div>
+          <div class="stat-label">Field Types</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value gradient-text">4</div>
+          <div class="stat-label">Clean Arch Layers</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value gradient-text">56</div>
+          <div class="stat-label">Unit Tests</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value gradient-text">∞</div>
+          <div class="stat-label">Tenants</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURES ─────────────────────────────────────────────── -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Key Features
+        </div>
+        <h2 class="section-title">Everything you need, nothing you don't</h2>
+        <p class="section-subtitle">
+          A fully-featured CMS platform with a clean architecture foundation — extensible, testable, and production-ready out of the box.
+        </p>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-indigo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7M17 14v7"/></svg>
+          </div>
+          <h3 class="feature-title">Dynamic Content Types</h3>
+          <p class="feature-desc">Schema builder with 30+ field types — Text, RichText, Gallery, Relation, GeoLocation, Rating, DateRange, and more. Drag-and-drop field ordering, JSON options per field type.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3 class="feature-title">Multi-Tenant</h3>
+          <p class="feature-desc">Full tenant isolation with subdomain resolution middleware. SystemAdmin cross-tenant console with impersonation, tenant provisioning, and per-tenant data partitioning.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-teal">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <h3 class="feature-title">Multilingual</h3>
+          <p class="feature-desc">Per-tenant language configuration, DB-backed admin UI i18n managed by SystemAdmin (250+ keys, tr/en), per-field localization flags, and language switcher in the content editor.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-amber">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          </div>
+          <h3 class="feature-title">Public REST API</h3>
+          <p class="feature-desc">Per-content-type API exposure with API key + JWT auth, rate limiting (sliding window), response caching, EAV field filtering/sorting, field visibility/aliasing, and projection.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-rose">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="feature-title">Role-Based Access</h3>
+          <p class="feature-desc">Four roles: SystemAdmin, TenantAdmin, Editor, Viewer. Per-content-type CRUD permission matrix. UI hides unauthorized buttons; action filters enforce server-side access control.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-sky">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3 class="feature-title">Security-First</h3>
+          <p class="feature-desc">BCrypt passwords (workfactor 12), CSRF on all mutations, path traversal guard on file operations, parameterized Dapper queries, login rate limiting, and email 2FA with SMTP.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── ARCHITECTURE ──────────────────────────────────────────── -->
+  <section id="architecture">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          Architecture
+        </div>
+        <h2 class="section-title">Clean Architecture, four layers</h2>
+        <p class="section-subtitle">
+          Each layer depends only on the ones below it. Infrastructure details never leak into business logic. Web never touches repositories.
+        </p>
+      </div>
+
+      <div class="arch-wrapper reveal">
+
+        <!-- HTTP label -->
+        <div style="margin-bottom:8px; font-size:12px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); text-align:center;">HTTP Request</div>
+        <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+        <!-- Web Layer -->
+        <div class="arch-layer" style="border-left: 3px solid var(--indigo);">
+          <div>
+            <div class="arch-layer-name" style="color:var(--indigo-light);">Web Layer</div>
+            <div class="arch-badges" style="margin-top:8px;">
+              <span class="arch-badge ab-indigo">ASP.NET Core MVC</span>
+              <span class="arch-badge ab-indigo">Controllers</span>
+              <span class="arch-badge ab-indigo">ViewModels</span>
+              <span class="arch-badge ab-indigo">Middleware</span>
+            </div>
+          </div>
+          <div class="arch-layer-desc">Razor views, typed ViewModels, route handlers, auth cookies, antiforgery</div>
+        </div>
+
+        <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+        <!-- Application Layer -->
+        <div class="arch-layer" style="border-left: 3px solid var(--purple); width: 92%;">
+          <div>
+            <div class="arch-layer-name" style="color:#c084fc;">Application Layer</div>
+            <div class="arch-badges" style="margin-top:8px;">
+              <span class="arch-badge ab-purple">Use Cases</span>
+              <span class="arch-badge ab-purple">DTOs</span>
+              <span class="arch-badge ab-purple">Result&lt;T&gt;</span>
+              <span class="arch-badge ab-purple">FluentValidation</span>
+            </div>
+          </div>
+          <div class="arch-layer-desc">Service orchestration, domain rules, validation, Result pattern — no SQL, no HTTP</div>
+        </div>
+
+        <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+        <!-- Infrastructure Layer -->
+        <div class="arch-layer" style="border-left: 3px solid var(--teal); width: 84%;">
+          <div>
+            <div class="arch-layer-name" style="color:var(--teal);">Infrastructure Layer</div>
+            <div class="arch-badges" style="margin-top:8px;">
+              <span class="arch-badge ab-teal">Dapper Repos</span>
+              <span class="arch-badge ab-teal">File Storage</span>
+              <span class="arch-badge ab-teal">ImageSharp</span>
+              <span class="arch-badge ab-teal">Serilog</span>
+            </div>
+          </div>
+          <div class="arch-layer-desc">Dapper + parameterized SQL, file I/O, image processing, BCrypt, JWT, email</div>
+        </div>
+
+        <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+        <!-- Domain Layer -->
+        <div class="arch-layer" style="border-left: 3px solid var(--sky); width: 76%;">
+          <div>
+            <div class="arch-layer-name" style="color:var(--sky);">Domain Layer</div>
+            <div class="arch-badges" style="margin-top:8px;">
+              <span class="arch-badge ab-sky">Entities</span>
+              <span class="arch-badge ab-sky">Enums</span>
+              <span class="arch-badge ab-sky">Interfaces</span>
+            </div>
+          </div>
+          <div class="arch-layer-desc">Pure C# — zero dependencies, no NuGet, no I/O</div>
+        </div>
+
+        <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+        <!-- SQL Server -->
+        <div style="background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.25); border-radius: var(--radius-md); padding: 16px 32px; text-align:center; width:68%;">
+          <div style="font-size:13px; font-weight:600; color:var(--teal);">🗄️ SQL Server (Docker)</div>
+        </div>
+
+      </div>
+
+      <div class="reveal" style="margin-top:48px; display:flex; gap:24px; flex-wrap:wrap; justify-content:center;">
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px 28px; text-align:center; flex:1; min-width:200px;">
+          <div style="font-size:24px; margin-bottom:6px;">🚫</div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px;">No EF Core</div>
+          <div style="font-size:12px; color:var(--text-muted);">Dapper only — explicit SQL, full control</div>
+        </div>
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px 28px; text-align:center; flex:1; min-width:200px;">
+          <div style="font-size:24px; margin-bottom:6px;">🚫</div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px;">No ViewBag</div>
+          <div style="font-size:12px; color:var(--text-muted);">Typed ViewModels enforced everywhere</div>
+        </div>
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px 28px; text-align:center; flex:1; min-width:200px;">
+          <div style="font-size:24px; margin-bottom:6px;">🚫</div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px;">No Business Logic in Controllers</div>
+          <div style="font-size:12px; color:var(--text-muted);">Controllers ≤80 lines — input → service → view</div>
+        </div>
+        <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:20px 28px; text-align:center; flex:1; min-width:200px;">
+          <div style="font-size:24px; margin-bottom:6px;">🚫</div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:4px;">No SQL Interpolation</div>
+          <div style="font-size:12px; color:var(--text-muted);">Parameterized queries only, always</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FIELD TYPES ───────────────────────────────────────────── -->
+  <section id="fields">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Field Types
+        </div>
+        <h2 class="section-title">30+ field types, zero schema migrations</h2>
+        <p class="section-subtitle">
+          EAV storage lets you add, remove, and reorder fields without touching the database schema. Every field type has server-side validation and a tailored UI input.
+        </p>
+      </div>
+
+      <div class="field-groups reveal">
+        <div class="field-group">
+          <div class="field-group-title">Text</div>
+          <div class="field-chips">
+            <span class="field-chip chip-text">Text</span>
+            <span class="field-chip chip-text">RichText</span>
+            <span class="field-chip chip-text">Markdown</span>
+            <span class="field-chip chip-text">CodeSnippet</span>
+            <span class="field-chip chip-text">Email</span>
+            <span class="field-chip chip-text">URL</span>
+            <span class="field-chip chip-text">Phone</span>
+            <span class="field-chip chip-text">Password</span>
+            <span class="field-chip chip-text">Slug</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Numbers</div>
+          <div class="field-chips">
+            <span class="field-chip chip-number">Number</span>
+            <span class="field-chip chip-number">Decimal</span>
+            <span class="field-chip chip-number">Rating</span>
+          </div>
+          <div class="field-group-title" style="margin-top:20px;">Boolean</div>
+          <div class="field-chips">
+            <span class="field-chip chip-number">Boolean</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Dates</div>
+          <div class="field-chips">
+            <span class="field-chip chip-date">Date</span>
+            <span class="field-chip chip-date">DateTime</span>
+            <span class="field-chip chip-date">Time</span>
+            <span class="field-chip chip-date">DateRange</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Media</div>
+          <div class="field-chips">
+            <span class="field-chip chip-media">Image</span>
+            <span class="field-chip chip-media">Video</span>
+            <span class="field-chip chip-media">Audio</span>
+            <span class="field-chip chip-media">File</span>
+            <span class="field-chip chip-media">Gallery</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Relations</div>
+          <div class="field-chips">
+            <span class="field-chip chip-relation">Relation</span>
+            <span class="field-chip chip-relation">MultiRelation</span>
+          </div>
+          <div class="field-group-title" style="margin-top:20px;">Structured</div>
+          <div class="field-chips">
+            <span class="field-chip chip-relation">JSON</span>
+            <span class="field-chip chip-relation">GeoLocation</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Choice</div>
+          <div class="field-chips">
+            <span class="field-chip chip-special">Select</span>
+            <span class="field-chip chip-special">MultiSelect</span>
+            <span class="field-chip chip-special">Tags</span>
+          </div>
+          <div class="field-group-title" style="margin-top:20px;">Misc</div>
+          <div class="field-chips">
+            <span class="field-chip chip-special">Color</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── QUICK START ───────────────────────────────────────────── -->
+  <section id="quickstart">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Quick Start
+        </div>
+        <h2 class="section-title">Up and running in minutes</h2>
+        <p class="section-subtitle">
+          Docker spins up SQL Server automatically. All migrations are numbered SQL scripts applied with a single command.
+        </p>
+      </div>
+
+      <div class="quickstart-grid">
+        <div class="quickstart-steps reveal">
+          <div class="qs-step">
+            <div class="qs-number">1</div>
+            <div class="qs-content">
+              <div class="qs-title">Clone &amp; configure</div>
+              <div class="qs-desc">Clone the repository and copy <span class="qs-inline-code">docker/.env.example</span> to <span class="qs-inline-code">docker/.env</span>. Set a strong DB password and JWT signing key.</div>
+            </div>
+          </div>
+          <div class="qs-step">
+            <div class="qs-number">2</div>
+            <div class="qs-content">
+              <div class="qs-title">Start SQL Server</div>
+              <div class="qs-desc">One command launches SQL Server 2022 in Docker with a named volume for data persistence.</div>
+            </div>
+          </div>
+          <div class="qs-step">
+            <div class="qs-number">3</div>
+            <div class="qs-content">
+              <div class="qs-title">Apply migrations</div>
+              <div class="qs-desc">Run the numbered SQL scripts in order via <span class="qs-inline-code">sqlcmd</span> inside the container. Dev seeds are idempotent — safe to re-run.</div>
+            </div>
+          </div>
+          <div class="qs-step">
+            <div class="qs-number">4</div>
+            <div class="qs-content">
+              <div class="qs-title">Run the app</div>
+              <div class="qs-desc">Start the web project and log in with the seeded admin credentials. Your first tenant is ready.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal reveal">
+          <div class="terminal-bar">
+            <div class="terminal-dot td-red"></div>
+            <div class="terminal-dot td-amber"></div>
+            <div class="terminal-dot td-green"></div>
+            <span class="terminal-title">bash — varyo-cms</span>
+          </div>
+          <div class="terminal-body">
+            <code>
+<span class="t-comment"># 1. Start SQL Server + apply migrations</span>
+<span class="t-prompt">$ </span><span class="t-cmd">docker-compose <span class="t-flag">-f</span> docker/docker-compose.yml up <span class="t-flag">-d</span></span>
+
+<span class="t-prompt">$ </span><span class="t-cmd">docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd \</span>
+  <span class="t-flag">-S</span> localhost <span class="t-flag">-U</span> sa <span class="t-flag">-P</span> <span class="t-string">"Varyo_Dev2024!"</span> <span class="t-flag">-C</span> \
+  <span class="t-flag">-d</span> Varyo <span class="t-flag">-i</span> /migrations/001_init_tenants_users.sql
+
+<span class="t-comment"># (repeat for each migration file)</span>
+
+<span class="t-comment"># 2. Run the application</span>
+<span class="t-prompt">$ </span><span class="t-cmd">dotnet run <span class="t-flag">--project</span> src/VaryoCms.Web</span>
+
+<span class="t-success">info</span>: Now listening on: <span class="t-info">http://localhost:5267</span>
+
+<span class="t-comment"># 3. Open in browser and log in</span>
+<span class="t-comment">#    Email: admin@dev.local</span>
+<span class="t-comment">#    Pass:  Admin123!</span>
+            </code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── API PREVIEW ───────────────────────────────────────────── -->
+  <section id="api">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+          Public REST API
+        </div>
+        <h2 class="section-title">Headless-ready, out of the box</h2>
+        <p class="section-subtitle">
+          Any content type can be exposed as a typed REST endpoint in one click. Authentication, rate limiting, field visibility, and caching — all configurable per endpoint from the admin UI.
+        </p>
+      </div>
+
+      <div class="api-preview-grid reveal">
+        <div class="api-info">
+          <div class="api-endpoint-row">
+            <span class="http-method">GET</span>
+            <span class="api-url">/api/v1/{tenant}/{content-type}</span>
+          </div>
+          <div class="api-features-list">
+            <div class="api-feature"><span>Tenant resolved from URL slug — fully isolated</span></div>
+            <div class="api-feature"><span>Auth: None / API Key (<code style="font-family:monospace;font-size:12px;color:var(--indigo-light);">X-API-Key</code>) / JWT Bearer</span></div>
+            <div class="api-feature"><span>EAV field filtering via <code style="font-family:monospace;font-size:12px;color:var(--indigo-light);">filter[slug]=value</code></span></div>
+            <div class="api-feature"><span>Sorting with <code style="font-family:monospace;font-size:12px;color:var(--indigo-light);">sort=field:asc|desc</code></span></div>
+            <div class="api-feature"><span>Field projection: <code style="font-family:monospace;font-size:12px;color:var(--indigo-light);">?fields=title,slug,image</code></span></div>
+            <div class="api-feature"><span>Sliding-window rate limiting with <code style="font-family:monospace;font-size:12px;color:var(--indigo-light);">X-RateLimit-*</code> headers</span></div>
+            <div class="api-feature"><span>Configurable response caching (per content type)</span></div>
+            <div class="api-feature"><span>Field aliasing: rename keys in JSON response</span></div>
+            <div class="api-feature"><span>Relation fields auto-expand to <code style="font-family:monospace;font-size:12px;color:var(--indigo-light);">{id, displayValue}</code></span></div>
+            <div class="api-feature"><span>Media fields auto-expand to <code style="font-family:monospace;font-size:12px;color:var(--indigo-light);">{id, url}</code></span></div>
+          </div>
+
+          <div class="auth-grid">
+            <div class="auth-badge"><div class="auth-dot" style="background:var(--emerald)"></div>None (public)</div>
+            <div class="auth-badge"><div class="auth-dot" style="background:var(--indigo-light)"></div>API Key</div>
+            <div class="auth-badge"><div class="auth-dot" style="background:var(--purple)"></div>JWT Bearer</div>
+          </div>
+        </div>
+
+        <div class="code-window">
+          <div class="code-window-bar">
+            <div class="code-window-dots">
+              <div class="terminal-dot td-red"></div>
+              <div class="terminal-dot td-amber"></div>
+              <div class="terminal-dot td-green"></div>
+            </div>
+            <span class="code-window-lang">JSON Response</span>
+          </div>
+          <div class="code-body">
+<pre><span class="j-punct">{</span>
+  <span class="j-key">"data"</span><span class="j-punct">: [</span>
+    <span class="j-punct">{</span>
+      <span class="j-key">"id"</span><span class="j-punct">:</span> <span class="j-num">42</span><span class="j-punct">,</span>
+      <span class="j-key">"slug"</span><span class="j-punct">:</span> <span class="j-str">"introducing-varyo-cms"</span><span class="j-punct">,</span>
+      <span class="j-key">"fields"</span><span class="j-punct">: {</span>
+        <span class="j-key">"title"</span><span class="j-punct">:</span> <span class="j-str">"Introducing Varyo CMS"</span><span class="j-punct">,</span>
+        <span class="j-key">"content"</span><span class="j-punct">:</span> <span class="j-str">"&lt;p&gt;Rich HTML content...&lt;/p&gt;"</span><span class="j-punct">,</span>
+        <span class="j-key">"views"</span><span class="j-punct">:</span> <span class="j-num">1284</span><span class="j-punct">,</span>
+        <span class="j-key">"featured"</span><span class="j-punct">:</span> <span class="j-bool">true</span><span class="j-punct">,</span>
+        <span class="j-key">"publishedAt"</span><span class="j-punct">:</span> <span class="j-str">"2025-06-27T09:00:00Z"</span><span class="j-punct">,</span>
+        <span class="j-key">"cover"</span><span class="j-punct">: {</span>
+          <span class="j-key">"id"</span><span class="j-punct">:</span> <span class="j-num">7</span><span class="j-punct">,</span>
+          <span class="j-key">"url"</span><span class="j-punct">:</span> <span class="j-str">"/uploads/1/a3f9b2c1.webp"</span>
+        <span class="j-punct">},</span>
+        <span class="j-key">"category"</span><span class="j-punct">: {</span>
+          <span class="j-key">"id"</span><span class="j-punct">:</span> <span class="j-num">3</span><span class="j-punct">,</span>
+          <span class="j-key">"displayValue"</span><span class="j-punct">:</span> <span class="j-str">"Technology"</span>
+        <span class="j-punct">},</span>
+        <span class="j-key">"tags"</span><span class="j-punct">:</span> <span class="j-str">"[\"cms\",\"dotnet\",\"open-source\"]"</span>
+      <span class="j-punct">},</span>
+      <span class="j-key">"meta"</span><span class="j-punct">: {</span>
+        <span class="j-key">"createdAt"</span><span class="j-punct">:</span> <span class="j-str">"2025-06-20T08:12:00Z"</span><span class="j-punct">,</span>
+        <span class="j-key">"updatedAt"</span><span class="j-punct">:</span> <span class="j-str">"2025-06-27T09:00:00Z"</span><span class="j-punct">,</span>
+        <span class="j-key">"status"</span><span class="j-punct">:</span> <span class="j-str">"published"</span><span class="j-punct">,</span>
+        <span class="j-key">"language"</span><span class="j-punct">:</span> <span class="j-str">"en"</span>
+      <span class="j-punct">}</span>
+    <span class="j-punct">}</span>
+  <span class="j-punct">],</span>
+  <span class="j-key">"pagination"</span><span class="j-punct">: {</span>
+    <span class="j-key">"page"</span><span class="j-punct">:</span> <span class="j-num">1</span><span class="j-punct">,</span>
+    <span class="j-key">"pageSize"</span><span class="j-punct">:</span> <span class="j-num">20</span><span class="j-punct">,</span>
+    <span class="j-key">"total"</span><span class="j-punct">:</span> <span class="j-num">284</span><span class="j-punct">,</span>
+    <span class="j-key">"totalPages"</span><span class="j-punct">:</span> <span class="j-num">15</span>
+  <span class="j-punct">}</span>
+<span class="j-punct">}</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ────────────────────────────────────────────────── -->
+  <div class="gradient-divider"></div>
+  <footer>
+    <div class="container">
+      <div class="footer-logo">
+        <div class="footer-logo-icon">✦</div>
+        Varyo CMS
+      </div>
+      <p class="footer-copy">Open Source · Built with ASP.NET Core 8 · MIT License</p>
+      <div class="footer-links">
+        <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+        <a href="#features">Features</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#fields">Field Types</a>
+        <a href="#api">API</a>
+        <a href="#quickstart">Quick Start</a>
+      </div>
+      <div class="footer-stack">
+        <span class="tech-chip" style="font-size:11px;">ASP.NET Core 8 MVC</span>
+        <span class="tech-chip" style="font-size:11px;">Dapper</span>
+        <span class="tech-chip" style="font-size:11px;">SQL Server 2022</span>
+        <span class="tech-chip" style="font-size:11px;">Docker</span>
+        <span class="tech-chip" style="font-size:11px;">BCrypt</span>
+        <span class="tech-chip" style="font-size:11px;">Serilog</span>
+        <span class="tech-chip" style="font-size:11px;">FluentValidation</span>
+        <span class="tech-chip" style="font-size:11px;">SortableJS</span>
+        <span class="tech-chip" style="font-size:11px;">ImageSharp</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── JS ────────────────────────────────────────────────────── -->
+  <script>
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          // stagger siblings inside same parent
+          const siblings = Array.from(entry.target.parentElement.querySelectorAll('.reveal'));
+          const idx = siblings.indexOf(entry.target);
+          entry.target.style.transitionDelay = (idx * 80) + 'ms';
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    reveals.forEach(el => observer.observe(el));
+
+    // Card radial mouse glow
+    function handleCardMouse(e, card) {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+      const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+      card.style.setProperty('--mx', x + '%');
+      card.style.setProperty('--my', y + '%');
+    }
+
+    // Smooth active nav link
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-links a');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(sec => {
+        if (window.scrollY >= sec.offsetTop - 100) current = sec.id;
+      });
+      navLinks.forEach(a => {
+        a.style.color = a.getAttribute('href') === '#' + current
+          ? 'var(--text-primary)'
+          : '';
+      });
+    }, { passive: true });
+  </script>
+</body>
+</html>
