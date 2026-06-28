@@ -1006,6 +1006,10 @@
       opacity: 0.3;
     }
 
+    /* ─── Field Category Grid ───────────────────────────────── */
+    .field-cat-grid { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 768px) { .field-cat-grid { grid-template-columns: 1fr; } }
+
     /* ─── Responsive ─────────────────────────────────────────── */
     html, body { overflow-x: hidden; }
 
@@ -1793,7 +1797,7 @@
         </span>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px;" class="reveal">
+      <div style="display:grid;gap:16px;margin-top:40px;" class="field-cat-grid reveal">
         <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:18px 22px;">
           <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--indigo-light);margin-bottom:10px;">Text &amp; Content</div>
           <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">Text, RichText (TinyMCE), Markdown (CodeMirror + preview), CodeSnippet (Monaco), Slug, Password, Email, URL, Phone, Color</div>
