@@ -1,0 +1,71 @@
+@model UserPermissionsViewModel
+@{
+    ViewData["Title"] = string.Format(L["User.PermissionsTitle"].Value, Model.UserEmail);
+}
+
+@section Breadcrumb {
+    <a asp-controller="UserManagement" asp-action="Index">@L["User.Title"]</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i> @L["User.Permissions"]
+}
+
+@if (Model.Permissions.Count == 0)
+{
+    <div class="cms-empty-state">
+        <i class="bi bi-shield-x cms-empty-icon"></i>
+        <h5>@L["User.PermissionsEmptyTitle"]</h5>
+        <p class="text-muted">@L["User.PermissionsEmptyHint"]</p>
+    </div>
+}
+else
+{
+    <form method="post" asp-action="Index" asp-route-userId="@Model.UserId">
+        @Html.AntiForgeryToken()
+        <div class="cms-table-wrapper">
+            <div class="table-responsive">
+                <table class="table cms-table">
+                    <thead>
+                        <tr>
+                            <th>@L["User.ContentType"]</th>
+                            <th class="text-center" style="width:90px">@L["User.PermRead"]</th>
+                            <th class="text-center" style="width:90px">@L["User.PermCreate"]</th>
+                            <th class="text-center" style="width:90px">@L["User.PermUpdate"]</th>
+                            <th class="text-center" style="width:90px">@L["User.PermDelete"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @for (int i = 0; i < Model.Permissions.Count; i++)
+                    {
+                        var perm = Model.Permissions[i];
+                        <tr>
+                            <td>
+                                <span class="cms-table-title">@perm.ContentTypeName</span>
+                                <input type="hidden" name="Permissions[@i].ContentTypeId" value="@perm.ContentTypeId" />
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" name="Permissions[@i].CanRead" value="true" @(perm.CanRead ? "checked" : "") />
+                                <input type="hidden" name="Permissions[@i].CanRead" value="false" />
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" name="Permissions[@i].CanCreate" value="true" @(perm.CanCreate ? "checked" : "") />
+                                <input type="hidden" name="Permissions[@i].CanCreate" value="false" />
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" name="Permissions[@i].CanUpdate" value="true" @(perm.CanUpdate ? "checked" : "") />
+                                <input type="hidden" name="Permissions[@i].CanUpdate" value="false" />
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" name="Permissions[@i].CanDelete" value="true" @(perm.CanDelete ? "checked" : "") />
+                                <input type="hidden" name="Permissions[@i].CanDelete" value="false" />
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="cms-form-footer">
+            <a class="btn btn-outline-secondary" asp-controller="UserManagement" asp-action="Index">@L["Common.Cancel"]</a>
+            <button type="submit" class="btn cms-btn-primary">@L["User.SavePermissions"]</button>
+        </div>
+    </form>
+}

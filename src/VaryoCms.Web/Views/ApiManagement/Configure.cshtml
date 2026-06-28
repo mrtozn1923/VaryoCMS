@@ -1,0 +1,221 @@
+@model ApiConfigFormViewModel
+@{
+    ViewData["Title"] = string.Format(L["Api.ConfigureTitle"].Value, Model.ContentTypeName);
+    ViewData["ApiActiveTab"] = "content-types";
+}
+
+@section Breadcrumb {
+    <a asp-action="Index">@L["Api.Title"]</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i>
+    @Model.ContentTypeName <span class="cms-mono text-muted ms-1">@Model.ContentTypeSlug</span>
+}
+
+<partial name="_ApiTabs" />
+
+<div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" asp-action="Configure" asp-route-contentTypeId="@Model.ContentTypeId">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ContentTypeId" />
+            <input type="hidden" asp-for="ContentTypeName" />
+            <input type="hidden" asp-for="ContentTypeSlug" />
+
+            <div class="card cms-card mb-4">
+                <div class="card-header cms-card-header"><h5 class="card-title mb-0">@L["Api.Settings"]</h5></div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" asp-for="IsEnabled" />
+                        <label class="form-check-label" asp-for="IsEnabled">@L["Api.ExposeAsApi"]</label>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" asp-for="IsPublic" />
+                        <label class="form-check-label" asp-for="IsPublic">@L["Api.IsPublicLabel"]</label>
+                    </div>
+                    <div class="cms-hint mb-3">@L["Api.PublicHint"]</div>
+
+                    <hr class="my-3" />
+                    <p class="fw-medium mb-2">@L["Api.Permissions"]</p>
+                    <div class="cms-hint mb-2">@L["Api.WriteAuthHint"]</div>
+                    <div class="d-flex flex-wrap gap-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="AllowRead" />
+                            <input type="hidden" name="AllowRead" value="false" />
+                            <label class="form-check-label" asp-for="AllowRead">@L["Api.AllowRead"]</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="AllowCreate" />
+                            <input type="hidden" name="AllowCreate" value="false" />
+                            <label class="form-check-label" asp-for="AllowCreate">@L["Api.AllowCreate"]</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="AllowUpdate" />
+                            <input type="hidden" name="AllowUpdate" value="false" />
+                            <label class="form-check-label" asp-for="AllowUpdate">@L["Api.AllowUpdate"]</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="AllowDelete" />
+                            <input type="hidden" name="AllowDelete" value="false" />
+                            <label class="form-check-label" asp-for="AllowDelete">@L["Api.AllowDelete"]</label>
+                        </div>
+                    </div>
+
+                    <hr class="my-3" />
+                    <div class="d-flex flex-wrap gap-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="AllowFiltering" />
+                            <label class="form-check-label" asp-for="AllowFiltering">@L["Api.Filtering"]</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="AllowSorting" />
+                            <label class="form-check-label" asp-for="AllowSorting">@L["Api.Sorting"]</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="AllowPagination" />
+                            <label class="form-check-label" asp-for="AllowPagination">@L["Api.Pagination"]</label>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-sm-6 cms-form-group mb-0">
+                            <label class="cms-label" asp-for="RateLimitPerMin">@L["Api.RateLimit"]</label>
+                            <input type="number" class="form-control" asp-for="RateLimitPerMin" min="1" max="100000" />
+                        </div>
+                        <div class="col-sm-6 cms-form-group mb-0">
+                            <label class="cms-label" asp-for="CacheSeconds">@L["Api.CacheSeconds"]</label>
+                            <input type="number" class="form-control" asp-for="CacheSeconds" min="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card cms-card mb-4">
+                <div class="card-header cms-card-header"><h5 class="card-title mb-0">@L["Api.FieldVisibility"]</h5></div>
+                <div class="card-body p-0">
+                    @if (Model.Fields.Count == 0)
+                    {
+                        <div class="p-3"><div class="cms-alert-info"><i class="bi bi-info-circle-fill"></i><span>@L["Api.NoFields"]</span></div></div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table cms-table mb-0">
+                                <thead>
+                                    <tr><th>@L["Api.Field"]</th><th class="text-center" style="width:90px">@L["Api.Visible"]</th><th style="width:220px">@L["Api.ResponseKeyAlias"]</th></tr>
+                                </thead>
+                                <tbody>
+                                @for (int i = 0; i < Model.Fields.Count; i++)
+                                {
+                                    var f = Model.Fields[i];
+                                    <tr>
+                                        <td>
+                                            <span class="cms-table-title">@f.FieldName</span>
+                                            <span class="cms-table-meta">@f.FieldSlug</span>
+                                            <input type="hidden" name="Fields[@i].ContentFieldId" value="@f.ContentFieldId" />
+                                            <input type="hidden" name="Fields[@i].FieldName" value="@f.FieldName" />
+                                            <input type="hidden" name="Fields[@i].FieldSlug" value="@f.FieldSlug" />
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input" name="Fields[@i].IsVisible" value="true" @(f.IsVisible ? "checked" : "") />
+                                            <input type="hidden" name="Fields[@i].IsVisible" value="false" />
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm"
+                                                   name="Fields[@i].ResponseKeyAlias" value="@f.ResponseKeyAlias"
+                                                   placeholder="@f.FieldSlug" />
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="cms-form-footer">
+                <a class="btn btn-outline-secondary" asp-action="Index">@L["Common.Cancel"]</a>
+                <button type="submit" class="btn cms-btn-primary">@L["Api.SaveConfiguration"]</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card cms-card">
+            <div class="card-header cms-card-header"><h5 class="card-title mb-0">@L["Api.CurlPreviewTitle"]</h5></div>
+            <div class="card-body">
+                @if (Model.IsPublic)
+                {
+                    <p class="cms-hint mb-2"><i class="bi bi-unlock me-1 text-success"></i>@L["Api.CurlPublicNote"]</p>
+                }
+                else
+                {
+                    <p class="cms-hint mb-2"><i class="bi bi-lock me-1 text-warning"></i>@L["Api.CurlProtectedNote"]</p>
+                }
+                <pre class="cms-pre"><code>curl "{baseUrl}/api/v1/{tenant-slug}/@(Model.ContentTypeSlug)?page=1&amp;pageSize=20"</code></pre>
+                <p class="cms-hint">@L["Api.SingleItem"] <code>/@(Model.ContentTypeSlug)/{id}</code> @L["Api.Or"] <code>/@(Model.ContentTypeSlug)/slug/{slug}</code></p>
+            </div>
+        </div>
+
+        <div class="card cms-card mt-3">
+            <div class="card-body">
+                <p class="cms-hint mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    @L["Api.CredentialsTab"] →
+                    <a asp-controller="ApiCredential" asp-action="Index">@L["Api.Credentials"]</a>
+                </p>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.RequestExampleJson) || !string.IsNullOrEmpty(Model.ResponseExampleJson))
+        {
+            <div class="card cms-card mt-3">
+                <div class="card-header cms-card-header">
+                    <h5 class="card-title mb-0">@L["Api.ModelPreview"]</h5>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.RequestExampleJson))
+                    {
+                        <p class="cms-label mb-1">@L["Api.RequestModel"] <span class="cms-mono text-muted">POST/PUT</span></p>
+                        <div class="position-relative mb-3">
+                            <pre class="cms-pre" style="max-height:200px;overflow:auto"><code id="req-preview">@Model.RequestExampleJson</code></pre>
+                            <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-1 copy-btn"
+                                    data-target="req-preview" title="@L["Api.CopyExample"]">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ResponseExampleJson))
+                    {
+                        <p class="cms-label mb-1">@L["Api.ResponseModel"] <span class="cms-mono text-muted">GET</span></p>
+                        <div class="position-relative">
+                            <pre class="cms-pre" style="max-height:200px;overflow:auto"><code id="res-preview">@Model.ResponseExampleJson</code></pre>
+                            <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-1 copy-btn"
+                                    data-target="res-preview" title="@L["Api.CopyExample"]">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    document.querySelectorAll('.copy-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var target = document.getElementById(btn.dataset.target);
+            if (!target) return;
+            navigator.clipboard.writeText(target.textContent.trim()).then(function () {
+                var icon = btn.querySelector('i');
+                if (icon) { icon.className = 'bi bi-clipboard-check'; setTimeout(function () { icon.className = 'bi bi-clipboard'; }, 1500); }
+            });
+        });
+    });
+    </script>
+}

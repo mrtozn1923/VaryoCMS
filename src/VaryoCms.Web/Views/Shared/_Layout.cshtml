@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Varyo CMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+@{
+    var authed = User.Identity?.IsAuthenticated == true;
+    var isAdmin = User.IsInRole("TenantAdmin") || User.IsInRole("SystemAdmin");
+    var isSystemAdmin = User.IsInRole("SystemAdmin");
+    var isImpersonating = User.HasClaim(c => c.Type == "ImpersonatedTenantId");
+    var systemMode = isSystemAdmin && !isImpersonating;   // platform console (no tenant context)
+}
+@if (authed)
+{
+    var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+    var fullName = User.FindFirst("FullName")?.Value;
+    <body class="cms-body">
+        <aside class="cms-sidebar" id="cms-sidebar">
+            <a class="cms-sidebar-brand" asp-controller="Home" asp-action="Index">
+                <div class="cms-brand-icon">✦</div>
+                <span>Varyo CMS</span>
+            </a>
+            <nav class="cms-sidebar-nav">
+                @if (systemMode)
+                {
+                    <div class="cms-nav-section">
+                        <span class="cms-nav-label">@L["Nav.Platform"]</span>
+                        <a class="cms-nav-item" asp-controller="SystemDashboard" asp-action="Index">
+                            <i class="bi bi-speedometer2"></i><span>@L["Nav.Dashboard"]</span>
+                        </a>
+                        <a class="cms-nav-item" asp-controller="SystemTenants" asp-action="Index">
+                            <i class="bi bi-buildings"></i><span>@L["Nav.Tenants"]</span>
+                        </a>
+                        <a class="cms-nav-item" asp-controller="SystemTranslations" asp-action="Index">
+                            <i class="bi bi-translate"></i><span>@L["Nav.Translations"]</span>
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="cms-nav-section">
+                        <a class="cms-nav-item" asp-controller="Home" asp-action="Index">
+                            <i class="bi bi-speedometer2"></i><span>@L["Nav.Dashboard"]</span>
+                        </a>
+                    </div>
+
+                    <div class="cms-nav-section cms-nav-divider">
+                        <span class="cms-nav-label">@L["Nav.Content"]</span>
+                        @await Component.InvokeAsync("NavMenu")
+                    </div>
+
+                    @if (isAdmin)
+                    {
+                        <div class="cms-nav-section cms-nav-divider">
+                            <span class="cms-nav-label">@L["Nav.Settings"]</span>
+                            <a class="cms-nav-item" asp-controller="ContentType" asp-action="Index">
+                                <i class="bi bi-grid-1x2"></i><span>@L["Nav.ContentTypes"]</span>
+                            </a>
+                            <a class="cms-nav-item" asp-controller="Language" asp-action="Index">
+                                <i class="bi bi-globe2"></i><span>@L["Nav.Languages"]</span>
+                            </a>
+                            <a class="cms-nav-item" asp-controller="Dictionary" asp-action="Index">
+                                <i class="bi bi-translate"></i><span>@L["Nav.Dictionary"]</span>
+                            </a>
+                            <a class="cms-nav-item" asp-controller="UserManagement" asp-action="Index">
+                                <i class="bi bi-people"></i><span>@L["Nav.Users"]</span>
+                            </a>
+                            <a class="cms-nav-item" asp-controller="ApiManagement" asp-action="Index">
+                                <i class="bi bi-code-slash"></i><span>@L["Nav.ApiManagement"]</span>
+                            </a>
+                            <a class="cms-nav-item" asp-controller="AuditLog" asp-action="Index">
+                                <i class="bi bi-journal-text"></i><span>@L["Nav.Logs"]</span>
+                            </a>
+                        </div>
+                    }
+
+                    @if (isAdmin)
+                    {
+                        <div class="cms-nav-section cms-nav-divider">
+                            <span class="cms-nav-label">@L["Nav.Library"]</span>
+                            <a class="cms-nav-item" asp-controller="Media" asp-action="Index">
+                                <i class="bi bi-images"></i><span>@L["Nav.Media"]</span>
+                            </a>
+                        </div>
+                    }
+                }
+            </nav>
+        </aside>
+
+        <div class="cms-sidebar-backdrop" id="cms-sidebar-backdrop"></div>
+
+        <div class="cms-main">
+            <header class="cms-topbar">
+                <button type="button" class="cms-sidebar-toggle" id="cms-sidebar-toggle" aria-label="@L["Topbar.ToggleMenu"]">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="cms-topbar-spacer"></div>
+                @await Component.InvokeAsync("LanguageSwitcher")
+                <div class="cms-topbar-user">
+                    <i class="bi bi-person-circle fs-5 text-muted"></i>
+                    <span class="cms-user-name">@fullName</span>
+                    <span class="badge cms-badge-info">@role</span>
+                    @{
+                        var accountController = systemMode ? "SystemAccount" : "Account";
+                    }
+                    <a class="cms-action-btn ms-1" asp-controller="@accountController" asp-action="ChangePassword" title="@L["Topbar.ChangePassword"]">
+                        <i class="bi bi-key"></i>
+                    </a>
+                    <form method="post" asp-controller="@accountController" asp-action="Logout" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="cms-action-btn cms-action-danger" title="@L["Topbar.Logout"]">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            @if (isImpersonating)
+            {
+                <partial name="_ImpersonationBanner" />
+            }
+
+            <main role="main" class="cms-content">
+                <div class="cms-page-header">
+                    <div>
+                        @if (IsSectionDefined("Breadcrumb"))
+                        {
+                            <nav class="cms-breadcrumb" aria-label="breadcrumb">@(await RenderSectionAsync("Breadcrumb", required: false))</nav>
+                        }
+                        <h1 class="cms-page-title">@ViewData["Title"]</h1>
+                    </div>
+                    <div class="cms-page-actions">
+                        @(await RenderSectionAsync("PageActions", required: false))
+                    </div>
+                </div>
+
+                @RenderBody()
+            </main>
+        </div>
+
+        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="~/js/site.js" asp-append-version="true"></script>
+        @await RenderSectionAsync("Scripts", required: false)
+    </body>
+}
+else
+{
+    <body class="cms-body">
+        <main role="main">
+            @RenderBody()
+        </main>
+        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="~/js/site.js" asp-append-version="true"></script>
+        @await RenderSectionAsync("Scripts", required: false)
+    </body>
+}
+</html>

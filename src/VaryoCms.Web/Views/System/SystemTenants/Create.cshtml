@@ -1,0 +1,71 @@
+@model TenantFormViewModel
+@{
+    ViewData["Title"] = L["Tenant.New"].Value;
+}
+
+@section Breadcrumb {
+    <a asp-action="Index">@L["Tenant.Tenants"]</a> <i class="bi bi-chevron-right" style="font-size:.65rem"></i> @L["Common.New"]
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card cms-card">
+            <div class="card-body">
+                <form method="post" asp-action="Create">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+                    <h2 class="cms-section-title mb-3">@L["Tenant.Tenant"]</h2>
+                    <div class="cms-form-group">
+                        <label asp-for="Name" class="cms-label">@L["Common.Name"]</label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                    <div class="cms-form-group">
+                        <label asp-for="Slug" class="cms-label">@L["Common.Slug"]</label>
+                        <input asp-for="Slug" class="form-control slug-field" placeholder="@L["Tenant.SlugPlaceholder"]" />
+                        <div class="cms-hint">@L["Tenant.SlugHint"]</div>
+                        <span asp-validation-for="Slug" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 cms-form-group">
+                            <label asp-for="DefaultLanguageCode" class="cms-label">@L["Field.DefaultLanguageCode"]</label>
+                            <input asp-for="DefaultLanguageCode" class="form-control slug-field" placeholder="@L["Tenant.LangCodePlaceholder"]" />
+                        </div>
+                        <div class="col-md-6 cms-form-group">
+                            <label asp-for="DefaultLanguageName" class="cms-label">@L["Field.DefaultLanguageName"]</label>
+                            <input asp-for="DefaultLanguageName" class="form-control" placeholder="@L["Tenant.LangNamePlaceholder"]" />
+                        </div>
+                    </div>
+
+                    <hr class="cms-divider" />
+                    <h2 class="cms-section-title mb-3">@L["Tenant.FirstAdmin"]</h2>
+                    <div class="cms-form-group">
+                        <label asp-for="FirstAdminEmail" class="cms-label">@L["Field.FirstAdminEmail"]</label>
+                        <input asp-for="FirstAdminEmail" class="form-control" autocomplete="off" />
+                        <span asp-validation-for="FirstAdminEmail" class="text-danger small"></span>
+                    </div>
+                    <div class="cms-form-group">
+                        <label asp-for="FirstAdminFullName" class="cms-label">@L["Field.FirstAdminFullName"]</label>
+                        <input asp-for="FirstAdminFullName" class="form-control" />
+                    </div>
+                    <div class="cms-form-group">
+                        <label asp-for="FirstAdminPassword" class="cms-label">@L["Field.FirstAdminPassword"]</label>
+                        <input asp-for="FirstAdminPassword" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="FirstAdminPassword" class="text-danger small"></span>
+                    </div>
+
+                    <div class="cms-form-footer">
+                        <a class="btn btn-outline-secondary" asp-action="Index">@L["Common.Cancel"]</a>
+                        <button type="submit" class="btn cms-btn-primary">@L["Tenant.Create"]</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

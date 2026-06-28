@@ -1,0 +1,37 @@
+# Build output
+**/bin/
+**/obj/
+**/publish/
+
+# Git
+.git/
+.gitignore
+
+# GitHub Actions
+.github/
+
+# IDE & tooling
+.vs/
+.vscode/
+.idea/
+**/*.user
+**/*.suo
+
+# Node / frontend deps (if any)
+**/node_modules/
+
+# Test projects
+tests/
+
+# Docs & planning
+docs/
+*.md
+index.html
+
+# Docker sources (not needed inside image)
+docker/
+
+# Development assets
+**/.env
+**/.env.*
+!docker/.env.example

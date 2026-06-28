@@ -1,0 +1,145 @@
+<div class="modal fade" id="field-options-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>@L["Field.Opt.Modal.Title"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                @* Text *@
+                <div class="fo-group" data-types="Text">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="cms-label">@L["Field.Opt.MaxLength"]</label>
+                            <input type="number" class="form-control fo-input" data-key="max_length" min="1" max="10000" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="cms-label">@L["Field.Opt.Placeholder"]</label>
+                            <input type="text" class="form-control fo-input" data-key="placeholder" />
+                        </div>
+                    </div>
+                </div>
+
+                @* RichText / Markdown *@
+                <div class="fo-group" data-types="RichText Markdown">
+                    <div class="cms-form-group">
+                        <label class="cms-label">@L["Field.Opt.Placeholder"]</label>
+                        <input type="text" class="form-control fo-input" data-key="placeholder" />
+                    </div>
+                </div>
+
+                @* Number / Decimal *@
+                <div class="fo-group" data-types="Number Decimal">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="cms-label">@L["Field.Opt.Min"]</label>
+                            <input type="number" class="form-control fo-input" data-key="min" step="any" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="cms-label">@L["Field.Opt.Max"]</label>
+                            <input type="number" class="form-control fo-input" data-key="max" step="any" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="cms-label">@L["Field.Opt.Decimals"]</label>
+                            <input type="number" class="form-control fo-input" data-key="decimals" min="0" max="10" />
+                        </div>
+                    </div>
+                </div>
+
+                @* Rating *@
+                <div class="fo-group" data-types="Rating">
+                    <div class="cms-form-group">
+                        <label class="cms-label">@L["Field.Opt.RatingMax"]</label>
+                        <select class="form-select fo-input" data-key="max" style="max-width:120px">
+                            <option value="5">5 ★</option>
+                            <option value="10">10 ★</option>
+                        </select>
+                    </div>
+                </div>
+
+                @* Select / MultiSelect *@
+                <div class="fo-group" data-types="Select MultiSelect">
+                    <label class="cms-label">@L["Field.Opt.Choices"]</label>
+                    <div id="fo-choices-list" class="mb-2 d-flex flex-wrap gap-1"></div>
+                    <div class="input-group">
+                        <input type="text" id="fo-choice-input" class="form-control"
+                               placeholder="@L["Field.Opt.AddChoice"]" />
+                        <button type="button" id="fo-choice-add" class="btn btn-outline-secondary">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
+                    <div class="cms-hint mt-1">@L["Field.Opt.ChoicesHint"]</div>
+                </div>
+
+                @* Image / Video / Audio / File / Gallery *@
+                <div class="fo-group" data-types="Image Video Audio File Gallery">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="cms-label">@L["Field.Opt.MaxSizeMb"]</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control fo-input" data-key="max_size_mb" min="1" />
+                                <span class="input-group-text">MB</span>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="cms-label">@L["Field.Opt.AllowedFormats"]</label>
+                            <input type="text" class="form-control fo-input" data-key="allowed_formats"
+                                   placeholder="jpg, png, webp" />
+                            <div class="cms-hint">@L["Field.Opt.AllowedFormatsHint"]</div>
+                        </div>
+                    </div>
+                </div>
+
+                @* CodeSnippet *@
+                <div class="fo-group" data-types="CodeSnippet">
+                    <div class="cms-form-group">
+                        <label class="cms-label">@L["Field.Opt.Language"]</label>
+                        <input type="text" class="form-control fo-input" data-key="language"
+                               placeholder="javascript, csharp, python, sql..." style="max-width:300px" />
+                    </div>
+                </div>
+
+                @* Relation / MultiRelation *@
+                <div class="fo-group" data-types="Relation MultiRelation">
+                    <div class="cms-form-group">
+                        <label class="cms-label">@L["Field.Opt.TargetType"]</label>
+                        <select id="fo-target-type" class="form-select fo-input" data-key="target_content_type_id"
+                                data-types-url="@Url.Action("ListJson", "ContentType")"
+                                data-fields-url-template="/admin/content-types/{id}/fields/json">
+                            <option value="">—</option>
+                        </select>
+                    </div>
+                    <div class="cms-form-group">
+                        <label class="cms-label">@L["Field.Opt.DisplayField"]</label>
+                        <select id="fo-display-field" class="form-select fo-input" data-key="display_field_slug">
+                            <option value="">@L["Field.Opt.DisplayFieldDefault"]</option>
+                        </select>
+                    </div>
+                    <div id="fo-relation-minmax" class="row g-3">
+                        <div class="col-md-6">
+                            <label class="cms-label">@L["Field.Opt.MinItems"]</label>
+                            <input type="number" class="form-control fo-input" data-key="min_items" min="0" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="cms-label">@L["Field.Opt.MaxItems"]</label>
+                            <input type="number" class="form-control fo-input" data-key="max_items" min="0" />
+                        </div>
+                    </div>
+                </div>
+
+                @* No options — all other types *@
+                <div class="fo-group" data-types="Boolean Date DateTime Time DateRange Email URL Phone Color JSON Tags Slug Password GeoLocation">
+                    <div class="text-center py-3 text-muted">
+                        <i class="bi bi-info-circle me-1"></i>@L["Field.Opt.None"]
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@L["Common.Cancel"]</button>
+                <button type="button" id="fo-apply-btn" class="btn cms-btn-primary">@L["Field.Opt.Apply"]</button>
+            </div>
+        </div>
+    </div>
+</div>

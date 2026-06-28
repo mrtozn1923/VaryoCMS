@@ -1,0 +1,72 @@
+@using VaryoCms.Application.DTOs.Dashboard
+@model TenantDashboardDto?
+@{
+    ViewData["Title"] = L["Home.Dashboard"].Value;
+    var isAdmin = User.IsInRole("TenantAdmin") || User.IsInRole("SystemAdmin");
+}
+@section Breadcrumb {
+    @L["Home.Dashboard"]
+}
+
+<p class="text-muted mb-4">@L["Home.WelcomeBack"]</p>
+
+@if (Model != null)
+{
+    <div class="cms-stat-grid mb-4">
+        <a class="cms-stat-card text-reset text-decoration-none" asp-controller="ContentType" asp-action="Index">
+            <div class="cms-stat-icon"><i class="bi bi-grid-1x2"></i></div>
+            <div>
+                <div class="cms-stat-value">@Model.ContentTypeCount</div>
+                <div class="cms-stat-label">@L["Dashboard.ContentTypes"]</div>
+            </div>
+        </a>
+        <a class="cms-stat-card text-reset text-decoration-none">
+            <div class="cms-stat-icon"><i class="bi bi-file-earmark-text"></i></div>
+            <div>
+                <div class="cms-stat-value">@Model.ContentItemCount</div>
+                <div class="cms-stat-label">@L["Dashboard.ContentItems"]</div>
+            </div>
+        </a>
+        <a class="cms-stat-card text-reset text-decoration-none" asp-controller="Media" asp-action="Index">
+            <div class="cms-stat-icon"><i class="bi bi-images"></i></div>
+            <div>
+                <div class="cms-stat-value">@Model.MediaAssetCount</div>
+                <div class="cms-stat-label">@L["Dashboard.MediaAssets"]</div>
+            </div>
+        </a>
+        @if (isAdmin)
+        {
+            <a class="cms-stat-card text-reset text-decoration-none" asp-controller="UserManagement" asp-action="Index">
+                <div class="cms-stat-icon"><i class="bi bi-people"></i></div>
+                <div>
+                    <div class="cms-stat-value">@Model.UserCount</div>
+                    <div class="cms-stat-label">@L["Dashboard.Users"]</div>
+                </div>
+            </a>
+            <a class="cms-stat-card text-reset text-decoration-none" asp-controller="Dictionary" asp-action="Index">
+                <div class="cms-stat-icon"><i class="bi bi-translate"></i></div>
+                <div>
+                    <div class="cms-stat-value">@Model.LanguageCount</div>
+                    <div class="cms-stat-label">@L["Dashboard.Languages"]</div>
+                </div>
+            </a>
+        }
+    </div>
+
+    <div class="card cms-card">
+        <div class="card-header cms-card-header d-flex align-items-center justify-content-between">
+            <h5 class="card-title mb-0"><i class="bi bi-activity me-2"></i>@L["Dashboard.RecentActivity"]</h5>
+            @if (isAdmin)
+            {
+                <a href="/admin/logs" class="btn btn-outline-secondary btn-sm">@L["Log.ViewAll"]</a>
+            }
+        </div>
+        <div class="card-body py-2 px-3">
+            @await Component.InvokeAsync("RecentActivity", new { take = 10 })
+        </div>
+    </div>
+}
+else
+{
+    <p class="cms-hint">@L["Home.SidebarHint"]</p>
+}

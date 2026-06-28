@@ -1,0 +1,35 @@
+# Build output
+bin/
+obj/
+[Bb]uild/
+out/
+
+# .NET / Rider / VS
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# Local config & secrets
+.claude/settings.local.json
+appsettings.*.local.json
+*.env
+.env
+
+# Uploaded media (per-tenant local storage)
+src/VaryoCms.Web/wwwroot/uploads/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Security scan outputs (transient)
+semgrep-report.json
+trufflehog-*.json

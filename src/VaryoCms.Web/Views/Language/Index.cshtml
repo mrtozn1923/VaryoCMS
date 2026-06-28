@@ -1,0 +1,97 @@
+@model IReadOnlyList<LanguageListItemDto>
+@{
+    ViewData["Title"] = L["Language.Title"].Value;
+}
+
+@section PageActions {
+    <a class="btn cms-btn-primary" asp-action="Create">
+        <i class="bi bi-plus-lg me-1"></i> @L["Language.New"]
+    </a>
+}
+
+@if (TempData["Error"] is string err)
+{
+    <div class="cms-alert-danger mb-3"><i class="bi bi-exclamation-triangle-fill"></i><span>@err</span></div>
+}
+
+@if (Model.Count == 0)
+{
+    <div class="cms-empty-state">
+        <i class="bi bi-translate cms-empty-icon"></i>
+        <h5>@L["Language.EmptyTitle"]</h5>
+        <a class="btn cms-btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i> @L["Language.New"]</a>
+    </div>
+}
+else
+{
+    <div class="cms-table-wrapper">
+        <div class="table-responsive">
+            <table class="table cms-table">
+                <thead>
+                    <tr>
+                        <th style="width:90px">@L["Common.Code"]</th>
+                        <th>@L["Common.Name"]</th>
+                        <th style="width:110px">@L["Common.Default"]</th>
+                        <th style="width:110px">@L["Common.Status"]</th>
+                        <th style="width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var l in Model)
+                {
+                    <tr>
+                        <td><span class="cms-mono">@l.Code.ToUpper()</span></td>
+                        <td>
+                            <span class="cms-table-title">
+                                @if (!string.IsNullOrWhiteSpace(l.FlagIcon))
+                                {
+                                    <i class="bi @l.FlagIcon me-1 text-muted"></i>
+                                }
+                                @l.Name
+                            </span>
+                        </td>
+                        <td>
+                            @if (l.IsDefault)
+                            {
+                                <span class="badge cms-badge-info">@L["Common.Default"]</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (l.IsActive)
+                            {
+                                <span class="badge cms-badge-success">@L["Common.Active"]</span>
+                            }
+                            else
+                            {
+                                <span class="badge cms-badge-secondary">@L["Common.Inactive"]</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="cms-row-actions">
+                                <a class="cms-action-btn" title="@L["Common.Edit"]" asp-action="Edit" asp-route-id="@l.Id">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                @if (!l.IsDefault)
+                                {
+                                    <form method="post" asp-action="SetActive" asp-route-id="@l.Id">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="isActive" value="@((!l.IsActive).ToString().ToLower())" />
+                                        <button type="submit" class="cms-action-btn"
+                                                title="@(l.IsActive ? L["Common.Deactivate"].Value : L["Common.Activate"].Value)">
+                                            <i class="bi @(l.IsActive ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

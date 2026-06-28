@@ -1,0 +1,35 @@
+@model NavMenuNodeViewModel
+@using VaryoCms.Web.ViewModels
+
+@{
+    string icon = string.IsNullOrWhiteSpace(Model.ContentType.Icon) ? "bi-collection" : Model.ContentType.Icon;
+    string groupId = $"nav-group-{Model.ContentType.Id}";
+}
+
+@if (Model.HasChildren)
+{
+    <div class="cms-nav-group" data-group-id="@Model.ContentType.Id">
+        <div class="cms-nav-group-header">
+            <a class="cms-nav-item cms-nav-group-link" asp-controller="ContentItem" asp-action="Index" asp-route-contentTypeId="@Model.ContentType.Id">
+                <i class="bi @icon"></i>
+                <span>@Model.ContentType.Name</span>
+            </a>
+            <button type="button" class="cms-nav-group-toggle" aria-label="Aç/kapat">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+        <div class="cms-nav-group-items" id="@groupId">
+            @foreach (var child in Model.Children)
+            {
+                @await Html.PartialAsync("_NavMenuNode", child)
+            }
+        </div>
+    </div>
+}
+else
+{
+    <a class="cms-nav-item" asp-controller="ContentItem" asp-action="Index" asp-route-contentTypeId="@Model.ContentType.Id">
+        <i class="bi @icon"></i>
+        <span>@Model.ContentType.Name</span>
+    </a>
+}

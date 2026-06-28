@@ -1,0 +1,107 @@
+@model IReadOnlyList<ApiCredentialListItemDto>
+@inject VaryoCms.Application.Interfaces.ITenantContext TenantCtx
+@{
+    ViewData["Title"] = L["Api.Credentials"].Value;
+    ViewData["ApiActiveTab"] = "credentials";
+}
+@section PageActions {
+    <a class="btn cms-btn-primary" asp-action="Create">
+        <i class="bi bi-plus-lg me-1"></i>@L["Api.NewCredential"]
+    </a>
+}
+
+<partial name="_ApiTabs" />
+
+@if (TempData["CredentialError"] is string err)
+{
+    <div class="cms-alert-danger mb-3"><i class="bi bi-exclamation-triangle-fill"></i><span>@err</span></div>
+}
+
+@if (Model.Count == 0)
+{
+    <div class="cms-empty-state">
+        <i class="bi bi-key cms-empty-icon"></i>
+        <h5>@L["Api.CredentialsEmptyTitle"]</h5>
+        <p class="text-muted">@L["Api.CredentialsEmptyHint"]</p>
+        <a class="btn cms-btn-primary" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>@L["Api.NewCredential"]
+        </a>
+    </div>
+}
+else
+{
+    <div class="cms-table-wrapper">
+        <div class="table-responsive">
+            <table class="table cms-table">
+                <thead>
+                    <tr>
+                        <th>@L["Api.CredentialName"]</th>
+                        <th style="width:100px">@L["Api.AuthTypeLabel"]</th>
+                        <th style="width:120px">@L["Api.GrantedContentTypes"]</th>
+                        <th style="width:90px">@L["Common.Status"]</th>
+                        <th style="width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <span class="cms-table-title">@item.Name</span>
+                            <span class="cms-table-meta">@item.CreatedAt.ToString("yyyy-MM-dd")</span>
+                        </td>
+                        <td>
+                            @if (item.AuthType == "ApiKey")
+                            {
+                                <span class="badge cms-badge-info"><i class="bi bi-key me-1"></i>API Key</span>
+                            }
+                            else
+                            {
+                                <span class="badge cms-badge-secondary"><i class="bi bi-shield-lock me-1"></i>JWT</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge @(item.GrantedCount > 0 ? "cms-badge-success" : "cms-badge-warning")">
+                                @item.GrantedCount @L["Api.ContentTypes"]
+                            </span>
+                        </td>
+                        <td>
+                            @if (item.IsActive)
+                            {
+                                <span class="badge cms-badge-success">@L["Common.Active"]</span>
+                            }
+                            else
+                            {
+                                <span class="badge cms-badge-secondary">@L["Common.Inactive"]</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="cms-row-actions">
+                                @if (item.IsActive && item.GrantedCount > 0)
+                                {
+                                    <a class="cms-action-btn" href="/api/docs/@TenantCtx.TenantSlug"
+                                       target="_blank" title="@L["Api.ViewDocs"]">
+                                        <i class="bi bi-book"></i>
+                                    </a>
+                                }
+                                <a class="cms-action-btn" asp-action="Edit" asp-route-id="@item.Id"
+                                   title="@L["Common.Edit"]">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" asp-action="Delete" asp-route-id="@item.Id"
+                                      onsubmit="return confirm('@L["Api.DeleteCredentialConfirm"]');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="cms-action-btn cms-action-danger"
+                                            title="@L["Common.Delete"]">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

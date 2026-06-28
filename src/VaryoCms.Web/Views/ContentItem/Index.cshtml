@@ -1,0 +1,233 @@
+@model ContentItemListViewModel
+@using VaryoCms.Application.DTOs.Localization
+@{
+    ViewData["Title"] = Model.ContentTypeName;
+    bool hasFilter = !string.IsNullOrEmpty(Model.Q) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.LanguageFilter);
+}
+
+@section Breadcrumb {
+    <a asp-controller="ContentType" asp-action="Index">@L["ContentType.Breadcrumb"]</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i> @Model.ContentTypeName
+}
+
+@section PageActions {
+    @if (Model.CanCreate)
+    {
+        <a class="btn cms-btn-primary" asp-action="Create" asp-route-contentTypeId="@Model.ContentTypeId">
+            <i class="bi bi-plus-lg me-1"></i> @L["ContentItem.New"]
+        </a>
+    }
+}
+
+<form method="get" asp-action="Index" asp-route-contentTypeId="@Model.ContentTypeId" class="mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col">
+            <input type="text" name="q" value="@Model.Q" class="form-control"
+                   placeholder="@L["ContentItem.Filter.Search"]" />
+        </div>
+        <div class="col-auto">
+            <select name="status" class="form-select">
+                <option value="">@L["ContentItem.Filter.All"]</option>
+                @foreach (var opt in new[] { ("draft", L["Status.Draft"]), ("published", L["Status.Published"]), ("archived", L["Status.Archived"]) })
+                {
+                    if (Model.StatusFilter == opt.Item1)
+                    {
+                        <option value="@opt.Item1" selected>@opt.Item2</option>
+                    }
+                    else
+                    {
+                        <option value="@opt.Item1">@opt.Item2</option>
+                    }
+                }
+            </select>
+        </div>
+        @if (Model.AvailableLanguages.Count > 0)
+        {
+            <div class="col-auto">
+                <select name="filterLang" class="form-select">
+                    <option value="">@L["ContentItem.Filter.Language"]</option>
+                    @foreach (LanguageDto lang in Model.AvailableLanguages)
+                    {
+                        if (Model.LanguageFilter == lang.Code)
+                        {
+                            <option value="@lang.Code" selected>@lang.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@lang.Code">@lang.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+        }
+        <div class="col-auto d-flex gap-1">
+            <button type="submit" class="btn cms-btn-primary">@L["ContentItem.Filter.Apply"]</button>
+            @if (hasFilter)
+            {
+                <a class="btn btn-outline-secondary" asp-action="Index" asp-route-contentTypeId="@Model.ContentTypeId">@L["Common.Clear"]</a>
+            }
+        </div>
+    </div>
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="cms-empty-state">
+        <i class="bi bi-inbox cms-empty-icon"></i>
+        <h5>@L["ContentItem.NoItems"]</h5>
+        @if (!hasFilter && Model.CanCreate)
+        {
+            <p class="text-muted">@L["ContentItem.Empty.Text", Model.ContentTypeName]</p>
+            <a class="btn cms-btn-primary" asp-action="Create" asp-route-contentTypeId="@Model.ContentTypeId">
+                <i class="bi bi-plus-lg me-1"></i> @L["ContentItem.New"]
+            </a>
+        }
+    </div>
+}
+else
+{
+    <div class="cms-table-wrapper">
+        <div class="table-responsive">
+            <table class="table cms-table">
+                <thead>
+                    <tr>
+                        <th style="width:60px">#</th>
+                        <th>@L["ContentItem.Title"]</th>
+                        <th style="width:120px">@L["Common.Status"]</th>
+                        <th style="width:110px">@L["ContentItem.Languages"]</th>
+                        <th style="width:160px">@L["Common.Created"]</th>
+                        <th style="width:160px">@L["Common.Updated"]</th>
+                        <th style="width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td class="text-muted small">@item.Id</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.Title))
+                            {
+                                <div class="fw-medium">@item.Title</div>
+                            }
+                            @if (!string.IsNullOrEmpty(item.Slug))
+                            {
+                                <div class="cms-mono small text-muted">@item.Slug</div>
+                            }
+                            else if (string.IsNullOrEmpty(item.Title))
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>
+                            @{
+                                var statusClass = item.Status switch
+                                {
+                                    "published" => "cms-badge-success",
+                                    "archived" => "cms-badge-secondary",
+                                    _ => "cms-badge-warning"
+                                };
+                                var statusLabel = item.Status switch
+                                {
+                                    "published" => L["Status.Published"],
+                                    "archived" => L["Status.Archived"],
+                                    _ => L["Status.Draft"]
+                                };
+                            }
+                            <span class="badge @statusClass">@statusLabel</span>
+                        </td>
+                        <td>
+                            @if (item.FilledLanguages.Count > 0)
+                            {
+                                foreach (var lang in item.FilledLanguages)
+                                {
+                                    string code = lang.Code.Trim().ToUpper();
+                                    if (lang.IsActive)
+                                    {
+                                        <span class="badge cms-badge-success me-1"
+                                              title="@string.Format(L["ContentItem.LangActive.Badge"].Value, code)">
+                                            <i class="bi bi-check-circle-fill me-1" style="font-size:.65em"></i>@code
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge cms-badge-secondary me-1"
+                                              title="@string.Format(L["ContentItem.LangInactive.Badge"].Value, code)">
+                                            <i class="bi bi-circle me-1" style="font-size:.65em"></i>@code
+                                        </span>
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="text-muted small">
+                            <div>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div>
+                            @if (!string.IsNullOrEmpty(item.CreatedByName))
+                            {
+                                <div class="text-muted" style="font-size:.8em">@item.CreatedByName</div>
+                            }
+                        </td>
+                        <td class="text-muted small">
+                            <div>@item.UpdatedAt.ToString("yyyy-MM-dd HH:mm")</div>
+                            @if (!string.IsNullOrEmpty(item.UpdatedByName))
+                            {
+                                <div class="text-muted" style="font-size:.8em">@item.UpdatedByName</div>
+                            }
+                        </td>
+                        <td>
+                            <div class="cms-row-actions">
+                                @if (Model.CanUpdate)
+                                {
+                                    <a class="cms-action-btn" title="@L["Common.Edit"]"
+                                       asp-action="Edit" asp-route-contentTypeId="@Model.ContentTypeId" asp-route-id="@item.Id">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                }
+                                @if (Model.CanDelete)
+                                {
+                                    <form method="post" asp-action="Delete"
+                                          asp-route-contentTypeId="@Model.ContentTypeId" asp-route-id="@item.Id"
+                                          onsubmit="return confirm('@L["ContentItem.DeleteConfirm"]');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="cms-action-btn cms-action-danger" title="@L["Common.Delete"]">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                                @if (!Model.CanUpdate && !Model.CanDelete)
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-contentTypeId="@Model.ContentTypeId"
+                           asp-route-page="@p"
+                           asp-route-q="@Model.Q"
+                           asp-route-status="@Model.StatusFilter"
+                           asp-route-filterLang="@Model.LanguageFilter">@p</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}
+
+@await Component.InvokeAsync("ContentActivity", new { contentTypeId = Model.ContentTypeId })

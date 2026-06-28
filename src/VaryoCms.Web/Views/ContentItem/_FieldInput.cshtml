@@ -1,0 +1,223 @@
+@model FieldRenderModel
+@{
+    var name = $"Values[{Model.Id}]";
+    var id = $"field_{Model.Id}";
+    var val = Model.Value;
+    var req = Model.IsRequired ? "required" : null;
+}
+
+<div class="cms-form-group">
+    <label for="@id" class="cms-label">
+        @Model.Name
+        @if (Model.IsRequired)
+        {
+            <span class="text-danger">*</span>
+        }
+        <span class="cms-type-badge ms-1">@Model.FieldType</span>
+    </label>
+
+    @switch (Model.FieldType)
+    {
+        case FieldType.Boolean:
+            <div class="form-check form-switch">
+                <input type="checkbox" class="form-check-input" id="@id" name="@name" value="true"
+                       @(val == "true" ? "checked" : null) />
+            </div>
+            break;
+
+        case FieldType.Number:
+        case FieldType.Decimal:
+            <input type="number" class="form-control" id="@id" name="@name" value="@val" required="@req"
+                   step="@Model.NumberStep"
+                   min="@(Model.NumberMin?.ToString() ?? null)"
+                   max="@(Model.NumberMax?.ToString() ?? null)" />
+            break;
+
+        case FieldType.Rating:
+            <input type="number" class="form-control" id="@id" name="@name" value="@val" required="@req"
+                   step="1" min="1" max="@Model.RatingMax" />
+            break;
+
+        case FieldType.Date:
+            <input type="date" class="form-control" id="@id" name="@name" value="@FormatDate(val, "yyyy-MM-dd")" required="@req" />
+            break;
+        case FieldType.DateTime:
+            <input type="datetime-local" class="form-control" id="@id" name="@name" value="@FormatDate(val, "yyyy-MM-ddTHH:mm")" required="@req" />
+            break;
+        case FieldType.DateRange:
+            var range = SplitRange(val);
+            <div class="row g-2">
+                <div class="col">
+                    <input type="date" class="form-control" name="RangeStart[@Model.Id]" value="@range.Start" required="@req" />
+                    <div class="cms-hint">@L["ContentItem.RangeStart"]</div>
+                </div>
+                <div class="col">
+                    <input type="date" class="form-control" name="RangeEnd[@Model.Id]" value="@range.End" />
+                    <div class="cms-hint">@L["ContentItem.RangeEnd"]</div>
+                </div>
+            </div>
+            break;
+        case FieldType.Time:
+            <input type="time" class="form-control" id="@id" name="@name" value="@FormatDate(val, "HH:mm")" required="@req" />
+            break;
+
+        case FieldType.Email:
+            <input type="email" class="form-control" id="@id" name="@name" value="@val" required="@req" />
+            break;
+        case FieldType.URL:
+            <input type="url" class="form-control" id="@id" name="@name" value="@val" required="@req" />
+            break;
+        case FieldType.Phone:
+            <input type="tel" class="form-control" id="@id" name="@name" value="@val" required="@req" />
+            break;
+        case FieldType.Color:
+            <input type="color" class="form-control form-control-color" id="@id" name="@name" value="@(val ?? "#000000")" />
+            break;
+
+        case FieldType.RichText:
+        case FieldType.Markdown:
+            <textarea class="form-control cms-mono" id="@id" name="@name" rows="4" required="@req"
+                      placeholder="@Model.Placeholder">@val</textarea>
+            break;
+
+        case FieldType.JSON:
+            <textarea class="form-control cms-mono" id="@id" name="@name" rows="4" required="@req">@val</textarea>
+            break;
+
+        case FieldType.CodeSnippet:
+            <textarea class="form-control cms-mono" id="@id" name="@name" rows="4" required="@req"
+                      data-language="@Model.CodeLanguage">@val</textarea>
+            break;
+
+        case FieldType.Select:
+            <select class="form-select" id="@id" name="@name" required="@req">
+                <option value="">@L["ContentItem.SelectPlaceholder"]</option>
+                @foreach (var c in Model.SelectChoices)
+                {
+                    <option value="@c" selected="@(c == val ? "selected" : null)">@c</option>
+                }
+            </select>
+            break;
+
+        case FieldType.MultiSelect:
+            {
+                var selectedValues = (val ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim()).ToHashSet();
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var c in Model.SelectChoices)
+                {
+                    var cbId = $"{id}_{c.GetHashCode()}";
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input multiselect-cb"
+                               id="@cbId" value="@c" data-name="@name"
+                               @(selectedValues.Contains(c) ? "checked" : null) />
+                        <label class="form-check-label" for="@cbId">@c</label>
+                    </div>
+                }
+            </div>
+            <input type="hidden" name="@name" id="@(id)_hidden" value="@val" />
+            <script>
+            (function(){
+                var hidden = document.getElementById('@(id)_hidden');
+                var cbs = document.querySelectorAll('[data-name="@name"].multiselect-cb');
+                function sync() {
+                    var checked = Array.from(cbs).filter(function(c){return c.checked;}).map(function(c){return c.value;});
+                    hidden.value = checked.join(',');
+                }
+                cbs.forEach(function(cb){ cb.addEventListener('change', sync); });
+            })();
+            </script>
+            }
+            break;
+
+        case FieldType.Image:
+        case FieldType.Video:
+        case FieldType.Audio:
+        case FieldType.File:
+        case FieldType.Gallery:
+            <div class="media-picker position-relative"
+                 data-multiple="@(Model.MediaMultiple ? "true" : "false")"
+                 data-media-type="@Model.MediaTypeFilter"
+                 data-search-url="/admin/media/search"
+                 data-max-size-mb="@(Model.MediaMaxSizeMb?.ToString() ?? null)"
+                 data-allowed-formats="@(Model.MediaAllowedFormats.Count > 0 ? string.Join(",", Model.MediaAllowedFormats) : null)">
+                <input type="hidden" name="@name" class="mp-value" value="@val" />
+                <div class="mp-chips d-flex flex-wrap gap-2 mb-1">
+                    @foreach (var m in Model.SelectedMedia)
+                    {
+                        <span class="mp-chip p-1 d-inline-flex align-items-center" data-id="@m.Id">
+                            @if (m.MediaType == "image")
+                            {
+                                <img src="@m.Url" class="cms-mp-thumb me-1" alt="" />
+                            }
+                            <span class="small text-truncate" style="max-width:160px;">@m.OriginalName</span>
+                            <a href="#" class="mp-remove text-danger ms-1 text-decoration-none">&times;</a>
+                        </span>
+                    }
+                </div>
+                <input type="text" class="form-control mp-search" placeholder="@L["ContentItem.MediaSearch"]" autocomplete="off" />
+                <div class="mp-results list-group position-absolute w-100" style="display:none;"></div>
+                <div class="cms-hint">@(Model.MediaMultiple ? L["ContentItem.MediaHintMultiple"] : L["ContentItem.MediaHintSingle"])</div>
+            </div>
+            break;
+
+        case FieldType.Relation:
+        case FieldType.MultiRelation:
+            if (Model.RelationTargetTypeId is null)
+            {
+                <div class="cms-alert-warning"><i class="bi bi-exclamation-triangle-fill"></i><span>@L["ContentItem.RelationNotConfigured"]</span></div>
+            }
+            else
+            {
+                <div class="relation-picker position-relative"
+                     data-multiple="@(Model.RelationMultiple ? "true" : "false")"
+                     data-display-field="@Model.RelationDisplayField"
+                     data-lang="@Model.LanguageCode"
+                     data-min="@(Model.RelationMinItems?.ToString() ?? "")"
+                     data-max="@(Model.RelationMaxItems?.ToString() ?? "")"
+                     data-search-url="/admin/content-types/@Model.RelationTargetTypeId/items/search">
+                    <input type="hidden" name="Relations[@Model.Id]" class="rp-value"
+                           value="@string.Join(",", Model.SelectedRelations.Select(r => r.Id))" />
+                    <div class="rp-chips mb-1 d-flex flex-wrap gap-1">
+                        @foreach (var sel in Model.SelectedRelations)
+                        {
+                            <span class="badge cms-badge-secondary rp-chip" data-id="@sel.Id">@sel.DisplayValue <a href="#" class="rp-remove text-decoration-none">&times;</a></span>
+                        }
+                    </div>
+                    <input type="text" class="form-control rp-search" placeholder="@L["ContentItem.RelationSearch"]" autocomplete="off" />
+                    <div class="rp-results list-group position-absolute w-100" style="display:none;"></div>
+                    @if (Model.RelationMultiple && (Model.RelationMinItems is > 0 || Model.RelationMaxItems is not null))
+                    {
+                        <div class="cms-hint">
+                            @(Model.RelationMinItems is int mn and > 0 ? $"{L["ContentItem.RelationMin"].Value} {mn}" : null)@(Model.RelationMinItems is > 0 && Model.RelationMaxItems is not null ? " · " : null)@(Model.RelationMaxItems is int mx ? $"{L["ContentItem.RelationMax"].Value} {mx}" : null) @L["ContentItem.RelationItems"]
+                        </div>
+                    }
+                </div>
+            }
+            break;
+
+        case FieldType.Text:
+        case FieldType.Slug:
+        case FieldType.Tags:
+            <input type="text" class="form-control" id="@id" name="@name" value="@val" required="@req"
+                   maxlength="@(Model.TextMaxLength?.ToString() ?? null)"
+                   placeholder="@Model.Placeholder" />
+            break;
+
+        default:
+            <input type="text" class="form-control" id="@id" name="@name" value="@val" required="@req" />
+            break;
+    }
+</div>
+
+@functions {
+    static string? FormatDate(string? raw, string fmt)
+        => DateTime.TryParse(raw, out var dt) ? dt.ToString(fmt) : raw;
+
+    // DateRange round-trips as "start|end" (yyyy-MM-dd).
+    static (string Start, string End) SplitRange(string? raw)
+    {
+        var p = (raw ?? string.Empty).Split('|');
+        return (p.Length > 0 ? p[0] : string.Empty, p.Length > 1 ? p[1] : string.Empty);
+    }
+}

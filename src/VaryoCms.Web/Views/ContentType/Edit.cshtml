@@ -1,0 +1,31 @@
+@model ContentTypeFormViewModel
+@{
+    ViewData["Title"] = L["ContentType.Edit"].Value;
+}
+
+@section Breadcrumb {
+    <a asp-action="Index">@L["ContentType.Breadcrumb"]</a> <i class="bi bi-chevron-right" style="font-size:.65rem"></i> @L["Common.Edit"]
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card cms-card">
+            <div class="card-body">
+                <form method="post" asp-controller="ContentType" asp-action="Edit" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <partial name="_FormFields" model="Model" />
+                    <div class="cms-form-footer">
+                        <a class="btn btn-outline-secondary" asp-action="Index">@L["Common.Cancel"]</a>
+                        <button type="submit" class="btn cms-btn-primary">@L["Common.SaveChanges"]</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/icon-picker.js" asp-append-version="true"></script>
+}

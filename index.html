@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Varyo CMS — Multi-Tenant, Multilingual Headless CMS</title>
+  <meta name="description" content="Multi-tenant, multilingual headless CMS built with ASP.NET Core 8, Dapper, and SQL Server. Clean Architecture, 30+ field types, full REST API with camelCase field convention." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── CSS Variables ─────────────────────────────────────── */
+    :root {
+      --bg-base:        #0d1117;
+      --bg-surface:     #131a26;
+      --bg-card:        #1a2235;
+      --bg-card-hover:  #1e2840;
+      --bg-code:        #111827;
+      --bg-api:         #0f1c2e;
+      --border:         rgba(99, 102, 241, 0.15);
+      --border-subtle:  rgba(255, 255, 255, 0.06);
+
+      --indigo:         #6366f1;
+      --indigo-light:   #818cf8;
+      --indigo-dark:    #4f46e5;
+      --purple:         #a855f7;
+      --teal:           #2dd4bf;
+      --emerald:        #34d399;
+      --amber:          #fbbf24;
+      --amber-dim:      #d97706;
+      --rose:           #f87171;
+      --sky:            #38bdf8;
+      --orange:         #fb923c;
+
+      --text-primary:   #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted:     #64748b;
+      --text-code:      #e2e8f0;
+
+      --radius-sm:  6px;
+      --radius-md:  12px;
+      --radius-lg:  20px;
+      --radius-xl:  28px;
+
+      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.18);
+
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ─── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; }
+
+    /* ─── Layout helpers ────────────────────────────────────── */
+    .container {
+      width: 100%;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    section { padding: 96px 0; }
+    section + section { border-top: 1px solid var(--border-subtle); }
+
+    /* ─── Typography ────────────────────────────────────────── */
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--indigo-light);
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+    }
+    .section-subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 640px;
+      line-height: 1.7;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .section-header .section-subtitle { margin: 0 auto; }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--indigo-light) 0%, var(--purple) 50%, var(--teal) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .amber-text {
+      background: linear-gradient(135deg, var(--amber) 0%, var(--orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── Buttons ────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 26px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--indigo) 0%, var(--indigo-dark) 100%);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--indigo-light) 0%, var(--indigo) 100%);
+      box-shadow: 0 6px 28px rgba(99, 102, 241, 0.55);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-card);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* ─── NAV ────────────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(13, 17, 23, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+    .nav-logo-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      font-size: 17px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: color var(--transition);
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-github {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .nav-github:hover { color: var(--text-primary); border-color: rgba(99,102,241,0.4); }
+
+    /* ─── HERO ───────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 140px 24px 100px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 85% 60%, rgba(168,85,247,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 10% 70%, rgba(45,212,191,0.08) 0%, transparent 60%);
+    }
+    .hero-mesh {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 0%, black 0%, transparent 80%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 880px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--indigo-light);
+      margin-bottom: 32px;
+      animation: fadeInDown 0.6s ease both;
+    }
+    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); display: inline-block; animation: pulse 2s ease infinite; }
+    .hero-title {
+      font-size: clamp(48px, 7.5vw, 88px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.06;
+      margin-bottom: 24px;
+      animation: fadeInDown 0.6s 0.1s ease both;
+    }
+    .hero-tagline {
+      font-size: clamp(15px, 2.2vw, 20px);
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+      animation: fadeInDown 0.6s 0.15s ease both;
+    }
+    .hero-stack-line {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 48px;
+      animation: fadeInDown 0.6s 0.2s ease both;
+    }
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 56px;
+      animation: fadeInDown 0.6s 0.28s ease both;
+    }
+    .hero-badges {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      animation: fadeInDown 0.6s 0.36s ease both;
+    }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 13px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .pill-version  { background: rgba(99,102,241,0.14); border: 1px solid rgba(99,102,241,0.3); color: var(--indigo-light); }
+    .pill-license  { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.25); color: var(--emerald); }
+    .pill-security { background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); color: var(--amber); }
+
+    /* ─── STATS BAR ──────────────────────────────────────────── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .stat-item {
+      background: var(--bg-card);
+      padding: 28px 20px;
+      text-align: center;
+      transition: var(--transition);
+    }
+    .stat-item:hover { background: var(--bg-card-hover); }
+    .stat-value {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 7px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ─── FEATURE GRID ───────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(99,102,241,0.08) 0%, transparent 65%);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(99,102,241,0.3);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+    }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      margin-bottom: 18px;
+    }
+    .feature-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 9px;
+      letter-spacing: -0.01em;
+    }
+    .feature-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+    .icon-indigo { background: rgba(99,102,241,0.15); }
+    .icon-purple { background: rgba(168,85,247,0.15); }
+    .icon-teal   { background: rgba(45,212,191,0.15); }
+    .icon-amber  { background: rgba(251,191,36,0.15); }
+    .icon-rose   { background: rgba(248,113,113,0.15); }
+    .icon-sky    { background: rgba(56,189,248,0.15); }
+    .icon-emerald{ background: rgba(52,211,153,0.15); }
+    .icon-orange { background: rgba(251,146,60,0.15); }
+
+    /* ─── ARCHITECTURE ───────────────────────────────────────── */
+    .arch-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+    .arch-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .arch-layer {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px 28px;
+      position: relative;
+      transition: var(--transition);
+    }
+    .arch-layer:hover {
+      border-color: rgba(99,102,241,0.35);
+      background: var(--bg-card-hover);
+    }
+    .arch-layer-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+    .arch-layer-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .arch-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .arch-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+    .ab-indigo { background: rgba(99,102,241,0.15); color: var(--indigo-light); }
+    .ab-purple { background: rgba(168,85,247,0.15); color: #c084fc; }
+    .ab-teal   { background: rgba(45,212,191,0.15); color: var(--teal); }
+    .ab-sky    { background: rgba(56,189,248,0.15); color: var(--sky); }
+    .arch-arrow {
+      height: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .arch-arrow-line {
+      width: 2px;
+      height: 18px;
+      background: linear-gradient(180deg, rgba(99,102,241,0.6) 0%, rgba(99,102,241,0.2) 100%);
+    }
+    .arch-arrow-head {
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid rgba(99,102,241,0.6);
+    }
+    .arch-db {
+      background: rgba(45,212,191,0.07);
+      border: 1px solid rgba(45,212,191,0.25);
+      border-radius: var(--radius-md);
+      padding: 14px 28px;
+      text-align: center;
+      width: 100%;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--teal);
+    }
+    .arch-details {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .arch-detail-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 22px 24px;
+    }
+    .arch-detail-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .arch-detail-item {
+      display: flex;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+    .arch-detail-item:last-child { margin-bottom: 0; }
+    .check-teal  { color: var(--teal); flex-shrink: 0; }
+    .check-purple { color: #c084fc; flex-shrink: 0; }
+    .ic { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--indigo-light); background: rgba(99,102,241,0.1); padding: 1px 6px; border-radius: 4px; }
+    .no-rule-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 32px;
+    }
+    .no-rule {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .no-rule-x { font-size: 18px; line-height: 1; flex-shrink: 0; color: var(--rose); }
+    .no-rule-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .no-rule-desc  { font-size: 12px; color: var(--text-muted); }
+
+    /* ─── EAV ────────────────────────────────────────────────── */
+    .eav-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+    .eav-tree {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 2;
+    }
+    .et-root   { color: var(--indigo-light); font-weight: 600; }
+    .et-l1     { color: #c084fc; padding-left: 24px; }
+    .et-l2     { color: var(--teal); padding-left: 48px; }
+    .et-l3     { color: var(--text-secondary); padding-left: 72px; font-size: 12px; }
+    .et-type   { color: var(--amber); font-size: 11px; }
+    .et-branch { color: var(--text-muted); user-select: none; }
+    .eav-benefits {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .eav-benefit {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px 22px;
+    }
+    .eav-benefit-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .eav-benefit-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .example-ct {
+      margin-top: 32px;
+      background: rgba(99,102,241,0.06);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+    }
+    .example-ct-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--indigo-light);
+      margin-bottom: 12px;
+    }
+    .ct-field-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .ct-field-row:last-child { border-bottom: none; }
+    .ct-field-name { color: var(--text-primary); font-weight: 500; flex: 1; }
+    .ct-field-type { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+    .ft-text     { background: rgba(99,102,241,0.12); color: var(--indigo-light); }
+    .ft-richtext { background: rgba(168,85,247,0.12); color: #c084fc; }
+    .ft-relation { background: rgba(56,189,248,0.12); color: var(--sky); }
+    .ft-image    { background: rgba(251,191,36,0.12); color: var(--amber); }
+    .ft-select   { background: rgba(248,113,113,0.12); color: var(--rose); }
+    .ft-bool     { background: rgba(52,211,153,0.12); color: var(--emerald); }
+
+    /* ─── API SECTION ────────────────────────────────────────── */
+    .api-section {
+      background: var(--bg-api);
+      border-top: 1px solid rgba(99,102,241,0.15) !important;
+      border-bottom: 1px solid rgba(99,102,241,0.15);
+    }
+    .api-grid-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+    .camelize-box {
+      background: rgba(251,191,36,0.06);
+      border: 1.5px solid rgba(251,191,36,0.4);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+    }
+    .camelize-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--amber);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.01em;
+    }
+    .camelize-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .camelize-row:last-child { border-bottom: none; }
+    .cam-from { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-secondary); flex: 1; }
+    .cam-arrow { color: var(--text-muted); font-size: 16px; }
+    .cam-to   { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--amber); font-weight: 500; flex: 1; }
+    .cam-note  { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+    .auth-table-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+    }
+    .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .api-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 0 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .api-table td {
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: top;
+      color: var(--text-secondary);
+    }
+    .api-table tr:last-child td { border-bottom: none; }
+    .api-table td:first-child { padding-right: 16px; }
+    .http-get    { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(52,211,153,0.15); color: var(--emerald); border: 1px solid rgba(52,211,153,0.25); white-space: nowrap; }
+    .http-post   { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(56,189,248,0.15); color: var(--sky); border: 1px solid rgba(56,189,248,0.25); white-space: nowrap; }
+    .http-put    { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); white-space: nowrap; }
+    .http-delete { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(248,113,113,0.15); color: var(--rose); border: 1px solid rgba(248,113,113,0.25); white-space: nowrap; }
+    .url-text { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-primary); }
+    .url-cond { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .auth-type { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .auth-header { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--indigo-light); }
+    .auth-note { font-size: 12px; color: var(--text-muted); }
+    .api-code-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    .code-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .code-block-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .code-block-dots { display: flex; gap: 7px; }
+    .td-red   { width: 11px; height: 11px; border-radius: 50%; background: #ef4444; }
+    .td-amber { width: 11px; height: 11px; border-radius: 50%; background: var(--amber); }
+    .td-green { width: 11px; height: 11px; border-radius: 50%; background: var(--emerald); }
+    .code-lang {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      background: rgba(99,102,241,0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .code-body {
+      padding: 22px 24px 26px;
+      overflow-x: auto;
+    }
+    .code-body pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.8;
+      color: var(--text-code);
+    }
+    .t-comment { color: #4a5a6e; }
+    .t-prompt  { color: var(--indigo-light); user-select: none; }
+    .t-cmd     { color: var(--text-code); }
+    .t-flag    { color: var(--teal); }
+    .t-string  { color: var(--amber); }
+    .t-success { color: var(--emerald); }
+    .t-url     { color: var(--sky); }
+    .j-key    { color: #94b4ff; }
+    .j-str    { color: #86efac; }
+    .j-num    { color: #fbbf24; }
+    .j-bool   { color: #f472b6; }
+    .j-null   { color: #94a3b8; }
+    .j-punct  { color: #64748b; }
+    .api-admin-steps {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      margin-bottom: 32px;
+    }
+    .admin-steps-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 28px;
+      letter-spacing: -0.01em;
+    }
+    .admin-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .admin-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .admin-step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.3);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--indigo-light);
+      flex-shrink: 0;
+    }
+    .admin-step-body { flex: 1; padding-top: 3px; }
+    .admin-step-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .admin-step-desc  { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .api-explorer-box {
+      background: rgba(99,102,241,0.06);
+      border: 1.5px solid rgba(99,102,241,0.35);
+      border-radius: var(--radius-lg);
+      padding: 28px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .api-explorer-left { flex: 1; }
+    .api-explorer-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+    .api-explorer-desc  { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+    .api-explorer-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--indigo-light);
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      margin-top: 14px;
+      display: inline-block;
+    }
+    .api-params-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 32px;
+    }
+    .api-param-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+    }
+    .api-param-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--teal); margin-bottom: 4px; }
+    .api-param-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    /* ─── QUICKSTART ─────────────────────────────────────────── */
+    .qs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .qs-col-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .qs-option-label {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(99,102,241,0.15);
+      color: var(--indigo-light);
+      border: 1px solid rgba(99,102,241,0.25);
+      margin-right: 4px;
+    }
+
+    /* ─── FIELD TYPES ────────────────────────────────────────── */
+    .fields-badge-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+    .field-chip {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 13px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      transition: var(--transition);
+      cursor: default;
+    }
+    .field-chip:hover { transform: translateY(-1px); }
+    .chip-text    { background: rgba(99,102,241,0.1);  border-color: rgba(99,102,241,0.2);  color: var(--indigo-light); }
+    .chip-number  { background: rgba(45,212,191,0.1);  border-color: rgba(45,212,241,0.2);  color: var(--teal); }
+    .chip-date    { background: rgba(168,85,247,0.1);  border-color: rgba(168,85,247,0.2);  color: #c084fc; }
+    .chip-media   { background: rgba(251,191,36,0.1);  border-color: rgba(251,191,36,0.2);  color: var(--amber); }
+    .chip-special { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.2); color: var(--rose); }
+    .chip-relation{ background: rgba(56,189,248,0.1);  border-color: rgba(56,189,248,0.2);  color: var(--sky); }
+    .field-count-highlight {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: var(--radius-md);
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--indigo-light);
+      margin-top: 8px;
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 52px 0;
+      text-align: center;
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+    .footer-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+    .footer-copy {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .footer-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: color var(--transition);
+    }
+    .footer-links a:hover { color: var(--indigo-light); }
+    .footer-tech {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tech-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 11px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    /* ─── Animations ─────────────────────────────────────────── */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(7px); }
+    }
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+    .gradient-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--indigo) 30%, var(--purple) 70%, transparent);
+      opacity: 0.3;
+    }
+
+    /* ─── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .arch-cols { grid-template-columns: 1fr; }
+      .eav-cols  { grid-template-columns: 1fr; }
+      .api-grid-top { grid-template-columns: 1fr; }
+      .api-code-section { grid-template-columns: 1fr; }
+      .admin-steps-grid { grid-template-columns: repeat(2, 1fr); }
+      .api-params-grid  { grid-template-columns: repeat(2, 1fr); }
+      .qs-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .no-rule-grid { grid-template-columns: 1fr; }
+      .admin-steps-grid { grid-template-columns: 1fr; }
+      .api-params-grid  { grid-template-columns: 1fr; }
+      .api-explorer-box { flex-direction: column; }
+    }
+    @media (max-width: 600px) {
+      section { padding: 64px 0; }
+      .hero   { padding: 120px 24px 80px; }
+      .stats-bar { grid-template-columns: 1fr 1fr; }
+      .arch-layer { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── NAV ─────────────────────────────────────────────────── -->
+  <nav class="nav">
+    <a href="#home" class="nav-logo">
+      <div class="nav-logo-icon">✦</div>
+      Varyo CMS
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#eav">EAV Model</a>
+      <a href="#api">Public API</a>
+      <a href="#quickstart">Quick Start</a>
+      <a href="#fields">Field Types</a>
+    </div>
+    <a href="https://github.com/mrtozn1923/VaryoCMS" class="nav-github" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      GitHub
+    </a>
+  </nav>
+
+  <!-- ─── HERO ──────────────────────────────────────────────────── -->
+  <section class="hero" id="home">
+    <div class="hero-bg"></div>
+    <div class="hero-mesh"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Open Source · Production Ready · v1.0.0
+      </div>
+      <h1 class="hero-title">
+        <span class="gradient-text">Varyo</span> CMS
+      </h1>
+      <p class="hero-tagline">Multi-tenant, multilingual headless CMS</p>
+      <p class="hero-stack-line">ASP.NET Core 8 &nbsp;·&nbsp; Dapper &nbsp;·&nbsp; SQL Server &nbsp;·&nbsp; Docker</p>
+      <div class="hero-cta">
+        <a href="https://github.com/mrtozn1923/VaryoCMS" class="btn btn-primary" target="_blank" rel="noopener">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          View on GitHub
+        </a>
+        <a href="#api" class="btn btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+          API Demo
+        </a>
+      </div>
+      <div class="hero-badges">
+        <span class="hero-pill pill-version">v1.0.0</span>
+        <span class="hero-pill pill-license">MIT License</span>
+        <span class="hero-pill pill-security">0 Security Findings</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="gradient-divider"></div>
+
+  <!-- ─── STATS ──────────────────────────────────────────────────── -->
+  <section style="padding: 60px 0;" id="stats">
+    <div class="container">
+      <div class="stats-bar reveal">
+        <div class="stat-item">
+          <div class="stat-value gradient-text">26</div>
+          <div class="stat-label">Tables</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value gradient-text">30+</div>
+          <div class="stat-label">Field Types</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value gradient-text">4</div>
+          <div class="stat-label">User Roles</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value gradient-text">156</div>
+          <div class="stat-label">Tests Passing</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURES ─────────────────────────────────────────────── -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Key Features</div>
+        <h2 class="section-title">Everything you need, nothing you don't</h2>
+        <p class="section-subtitle">
+          A production-ready CMS platform with a clean architecture foundation — extensible, secure, and headless by design.
+        </p>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-indigo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7M17 14v7"/></svg>
+          </div>
+          <h3 class="feature-title">Schema Builder</h3>
+          <p class="feature-desc">Visual drag-and-drop field builder with 30+ field types. Add, remove, and reorder fields without any schema migrations. JSON options per field type for fine-grained control.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <h3 class="feature-title">EAV Content</h3>
+          <p class="feature-desc">Entity-Attribute-Value storage for fully dynamic content. Every content item stores typed field values without requiring database schema changes per content type.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-amber">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="m8 21 4-4 4 4"/><path d="M9 8l3 3 3-3"/></svg>
+          </div>
+          <h3 class="feature-title">Media Library</h3>
+          <p class="feature-desc">Upload, crop, and search images with a searchable media picker. Cropper.js in-browser crop, SixLabors.ImageSharp server-side processing. Gallery field for multi-image sets.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-teal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <h3 class="feature-title">Multi-Language</h3>
+          <p class="feature-desc">Per-tenant language configuration. Per-field localization flags. Language switcher tabs in the content editor. DB-backed admin UI i18n managed globally by SystemAdmin.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-rose">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3 class="feature-title">Users &amp; Permissions</h3>
+          <p class="feature-desc">Four roles: SystemAdmin, TenantAdmin, Editor, Viewer. Per-content-type CRUD permission matrix. Action filters enforce server-side; UI hides unauthorized operations.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-sky">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <h3 class="feature-title">Audit Log</h3>
+          <p class="feature-desc">Dual-channel logging: Serilog diagnostic sink (SQL Server / Graylog) + Dapper audit trail. Every write operation recorded with user, tenant, action, and entity info.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="feature-title">SystemAdmin Console</h3>
+          <p class="feature-desc">Cross-tenant platform console at <code style="font-family:monospace;font-size:11px;color:#c084fc;">/system</code>. Tenant CRUD with atomic provisioning, impersonation, and global UI translation management.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-emerald">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <h3 class="feature-title">Email 2FA</h3>
+          <p class="feature-desc">Optional email-based two-factor authentication via SMTP. Configurable per deployment — <code style="font-family:monospace;font-size:11px;color:#34d399;">EmailVerification:Enabled</code> flag in appsettings. BCrypt workfactor 12.</p>
+        </div>
+
+        <div class="feature-card reveal" onmousemove="handleCardMouse(event,this)">
+          <div class="feature-icon icon-orange">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h3 class="feature-title">Docker Deploy</h3>
+          <p class="feature-desc">Multi-stage Dockerfile and docker-compose.yml included. SQL Server 2022 runs in a named-volume container. Numbered SQL migration scripts applied via sqlcmd.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── ARCHITECTURE ──────────────────────────────────────────── -->
+  <section id="architecture">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Architecture</div>
+        <h2 class="section-title">Clean Architecture, four strict layers</h2>
+        <p class="section-subtitle">
+          Each layer depends only on the ones below it. Infrastructure details never leak into business logic. The Web layer never touches repositories directly.
+        </p>
+      </div>
+
+      <div class="arch-cols reveal">
+        <!-- Left: stack diagram -->
+        <div class="arch-stack">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;text-align:center;">HTTP Request</div>
+          <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+          <div class="arch-layer" style="border-left:3px solid var(--indigo);">
+            <div class="arch-layer-name" style="color:var(--indigo-light);">Web Layer</div>
+            <div class="arch-layer-desc">Controllers (max 80 lines), Razor Views, typed ViewModels, Middleware, auth cookies, antiforgery</div>
+            <div class="arch-badges">
+              <span class="arch-badge ab-indigo">ASP.NET Core MVC</span>
+              <span class="arch-badge ab-indigo">Controllers</span>
+              <span class="arch-badge ab-indigo">ViewModels</span>
+              <span class="arch-badge ab-indigo">Middleware</span>
+            </div>
+          </div>
+
+          <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+          <div class="arch-layer" style="border-left:3px solid var(--purple); margin:0 16px; width:calc(100% - 32px);">
+            <div class="arch-layer-name" style="color:#c084fc;">Application Layer</div>
+            <div class="arch-layer-desc">Use-case orchestration, DTOs, Result&lt;T&gt; pattern, FluentValidation — no SQL, no HTTP</div>
+            <div class="arch-badges">
+              <span class="arch-badge ab-purple">Use Cases</span>
+              <span class="arch-badge ab-purple">DTOs</span>
+              <span class="arch-badge ab-purple">Result&lt;T&gt;</span>
+              <span class="arch-badge ab-purple">FluentValidation</span>
+              <span class="arch-badge ab-purple">IAuditLogger</span>
+            </div>
+          </div>
+
+          <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+          <div class="arch-layer" style="border-left:3px solid var(--teal); margin:0 32px; width:calc(100% - 64px);">
+            <div class="arch-layer-name" style="color:var(--teal);">Infrastructure Layer</div>
+            <div class="arch-layer-desc">Dapper repositories, parameterized SQL, file I/O, ImageSharp, Serilog, BCrypt, JWT, SMTP</div>
+            <div class="arch-badges">
+              <span class="arch-badge ab-teal">Dapper Repos</span>
+              <span class="arch-badge ab-teal">File Storage</span>
+              <span class="arch-badge ab-teal">ImageSharp</span>
+              <span class="arch-badge ab-teal">Serilog</span>
+            </div>
+          </div>
+
+          <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+
+          <div class="arch-layer" style="border-left:3px solid var(--sky); margin:0 48px; width:calc(100% - 96px);">
+            <div class="arch-layer-name" style="color:var(--sky);">Domain Layer</div>
+            <div class="arch-layer-desc">Pure C# — zero NuGet dependencies, no I/O, no infrastructure knowledge</div>
+            <div class="arch-badges">
+              <span class="arch-badge ab-sky">Entities</span>
+              <span class="arch-badge ab-sky">Enums</span>
+              <span class="arch-badge ab-sky">Interfaces</span>
+            </div>
+          </div>
+
+          <div class="arch-arrow"><div class="arch-arrow-line"></div><div class="arch-arrow-head"></div></div>
+          <div class="arch-db">SQL Server (Docker)</div>
+        </div>
+
+        <!-- Right: detail boxes -->
+        <div class="arch-details">
+          <div class="arch-detail-box" style="border-color:rgba(45,212,191,0.25);">
+            <div class="arch-detail-title" style="color:var(--teal);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Multi-Tenant Architecture
+            </div>
+            <div class="arch-detail-item"><span class="check-teal">&#10003;</span><span><strong>TenantResolutionMiddleware</strong> extracts subdomain from <span class="ic">{slug}.cms.example.com</span></span></div>
+            <div class="arch-detail-item"><span class="check-teal">&#10003;</span><span>Sets scoped <span class="ic">ITenantContext.TenantId</span> — available throughout the request lifecycle</span></div>
+            <div class="arch-detail-item"><span class="check-teal">&#10003;</span><span>Every repository query includes <span class="ic">tenant_id = @TenantId AND is_deleted = 0</span></span></div>
+            <div class="arch-detail-item"><span class="check-teal">&#10003;</span><span><span class="ic">DevTenantSlug</span> in appsettings — frictionless localhost development (no subdomain needed)</span></div>
+            <div class="arch-detail-item"><span class="check-teal">&#10003;</span><span>Impersonation overrides <span class="ic">ITenantContext</span> via <span class="ic">ImpersonationMiddleware</span> — tenant-scoped panel operates unchanged</span></div>
+          </div>
+
+          <div class="arch-detail-box" style="border-color:rgba(168,85,247,0.25);">
+            <div class="arch-detail-title" style="color:#c084fc;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              SystemAdmin Console <span class="ic">/system/*</span>
+            </div>
+            <div class="arch-detail-item"><span class="check-purple">&#10003;</span><span>Separate <span class="ic">system_admins</span> table — no <span class="ic">tenant_id</span> column, true cross-tenant identity</span></div>
+            <div class="arch-detail-item"><span class="check-purple">&#10003;</span><span>Login at <span class="ic">/system/login</span> — independent from tenant user auth cookie</span></div>
+            <div class="arch-detail-item"><span class="check-purple">&#10003;</span><span>Tenant CRUD: atomic provisioning — tenant + language + first TenantAdmin in one transaction</span></div>
+            <div class="arch-detail-item"><span class="check-purple">&#10003;</span><span>Impersonation: enter any tenant's admin panel, re-issues auth cookie with <span class="ic">ImpersonatedTenantId</span> claim</span></div>
+            <div class="arch-detail-item"><span class="check-purple">&#10003;</span><span>Global UI translation management at <span class="ic">/system/translations</span> — import/export, 250+ keys (tr/en)</span></div>
+          </div>
+
+          <div class="no-rule-grid">
+            <div class="no-rule"><span class="no-rule-x">&#10005;</span><div><div class="no-rule-title">No EF Core</div><div class="no-rule-desc">Dapper only — explicit SQL, full control</div></div></div>
+            <div class="no-rule"><span class="no-rule-x">&#10005;</span><div><div class="no-rule-title">No ViewBag</div><div class="no-rule-desc">Typed ViewModels enforced everywhere</div></div></div>
+            <div class="no-rule"><span class="no-rule-x">&#10005;</span><div><div class="no-rule-title">No Business Logic in Controllers</div><div class="no-rule-desc">Controllers &le;80 lines: input &rarr; service &rarr; view</div></div></div>
+            <div class="no-rule"><span class="no-rule-x">&#10005;</span><div><div class="no-rule-title">No SQL Interpolation</div><div class="no-rule-desc">Parameterized queries only, always</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── EAV CONTENT MODEL ────────────────────────────────────── -->
+  <section id="eav">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">EAV Content Structure</div>
+        <h2 class="section-title">Schema-free content, zero migrations</h2>
+        <p class="section-subtitle">
+          The Entity-Attribute-Value model lets you define any content structure without touching the database schema. Add fields, reorder them, and localize each one independently.
+        </p>
+      </div>
+
+      <div class="eav-cols reveal">
+        <div>
+          <div class="eav-tree">
+<div class="et-root">content_types</div>
+<div class="et-l1"><span class="et-branch">&#9492;&#9472; </span>"Blog Post" <span class="et-type">CT</span></div>
+<div class="et-l2"><span class="et-branch">&#9500;&#9472; </span>content_fields</div>
+<div class="et-l3"><span class="et-branch">&#9500;&#9472; </span>title <span class="et-type">Text</span></div>
+<div class="et-l3"><span class="et-branch">&#9500;&#9472; </span>body <span class="et-type">RichText</span></div>
+<div class="et-l3"><span class="et-branch">&#9500;&#9472; </span>cover_image <span class="et-type">Image</span></div>
+<div class="et-l3"><span class="et-branch">&#9500;&#9472; </span>category <span class="et-type">Relation</span></div>
+<div class="et-l3"><span class="et-branch">&#9500;&#9472; </span>authors <span class="et-type">MultiRelation</span></div>
+<div class="et-l3"><span class="et-branch">&#9492;&#9472; </span>is_featured <span class="et-type">Boolean</span></div>
+<div class="et-l2"><span class="et-branch">&#9492;&#9472; </span>content_items</div>
+<div class="et-l3"><span class="et-branch">&#9500;&#9472; </span>content_field_values</div>
+<div class="et-l3"><span class="et-branch">&#9492;&#9472; </span>content_field_relations</div>
+          </div>
+
+          <div class="example-ct" style="margin-top:20px;">
+            <div class="example-ct-label">Example: Blog Post fields</div>
+            <div class="ct-field-row"><span class="ct-field-name">title</span><span class="ct-field-type ft-text">Text</span><span style="font-size:11px;color:var(--teal);">localized</span></div>
+            <div class="ct-field-row"><span class="ct-field-name">body</span><span class="ct-field-type ft-richtext">RichText</span><span style="font-size:11px;color:var(--teal);">localized</span></div>
+            <div class="ct-field-row"><span class="ct-field-name">cover_image</span><span class="ct-field-type ft-image">Image</span><span style="font-size:11px;color:var(--text-muted);">global</span></div>
+            <div class="ct-field-row"><span class="ct-field-name">category</span><span class="ct-field-type ft-relation">Relation</span><span style="font-size:11px;color:var(--text-muted);">global</span></div>
+            <div class="ct-field-row"><span class="ct-field-name">authors</span><span class="ct-field-type ft-relation">MultiRelation</span><span style="font-size:11px;color:var(--text-muted);">global</span></div>
+            <div class="ct-field-row"><span class="ct-field-name">is_featured</span><span class="ct-field-type ft-bool">Boolean</span><span style="font-size:11px;color:var(--text-muted);">global</span></div>
+          </div>
+        </div>
+
+        <div class="eav-benefits">
+          <div class="eav-benefit">
+            <div class="eav-benefit-title" style="color:var(--indigo-light);">&#8594; Add fields without schema changes</div>
+            <div class="eav-benefit-desc">New field = one row in <code style="font-family:monospace;font-size:11px;">content_fields</code>. Values land in <code style="font-family:monospace;font-size:11px;">content_field_values</code> (typed columns: value_text, value_number, value_bool, value_date, value_media_id). No ALTER TABLE ever.</div>
+          </div>
+          <div class="eav-benefit">
+            <div class="eav-benefit-title" style="color:var(--teal);">&#8594; Relation fields use a dedicated junction</div>
+            <div class="eav-benefit-desc"><code style="font-family:monospace;font-size:11px;">content_field_relations</code> stores Relation and MultiRelation values — ordered by <code style="font-family:monospace;font-size:11px;">sort_order</code>, expanded to <code style="font-family:monospace;font-size:11px;">&#123;id, displayValue&#125;</code> in API responses.</div>
+          </div>
+          <div class="eav-benefit">
+            <div class="eav-benefit-title" style="color:#c084fc;">&#8594; Per-field language isolation</div>
+            <div class="eav-benefit-desc"><code style="font-family:monospace;font-size:11px;">is_localized = 1</code>: value stored per <code style="font-family:monospace;font-size:11px;">language_code</code>. <code style="font-family:monospace;font-size:11px;">is_localized = 0</code>: stored once with <code style="font-family:monospace;font-size:11px;">language_code = 'all'</code>. Content editor shows per-language tabs for localized fields.</div>
+          </div>
+          <div class="eav-benefit">
+            <div class="eav-benefit-title" style="color:var(--amber);">&#8594; Gallery field = one row, JSON array</div>
+            <div class="eav-benefit-desc">Gallery stores an ordered JSON array of media IDs in <code style="font-family:monospace;font-size:11px;">value_text</code>. The UNIQUE(item, field, lang) constraint enforces single-row semantics. API expands to <code style="font-family:monospace;font-size:11px;">[&#123;id, url&#125;, ...]</code>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── API MANAGEMENT ──────────────────────────────────────────────────── -->
+  <section id="api" class="api-section">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label" style="color:var(--amber);background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.3);">Public REST API</div>
+        <h2 class="section-title"><span class="amber-text">API Management</span></h2>
+        <p class="section-subtitle">
+          Expose any content type as a typed REST endpoint in one click. Authentication, rate limiting, field visibility, aliasing, caching — all configurable per content type from the admin panel.
+        </p>
+      </div>
+
+      <!-- camelCase convention + Auth table -->
+      <div class="api-grid-top reveal">
+        <div class="camelize-box">
+          <div class="camelize-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+            camelCase Field Key Convention
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.5;">All <code style="font-family:monospace;font-size:11px;color:var(--amber);">fields</code> keys in every response are camelCase. Aliases are entered as kebab-case in admin — the system normalizes automatically.</p>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.05em;">ExternalKey = ToCamelCase(alias ?? field.Slug)</div>
+          <div style="height:1px;background:rgba(251,191,36,0.2);margin-bottom:12px;"></div>
+          <div class="camelize-row">
+            <span class="cam-from">slug: "seo-meta-description"</span>
+            <span class="cam-arrow">&#8594;</span>
+            <span class="cam-to">seoMetaDescription</span>
+          </div>
+          <div class="camelize-row">
+            <span class="cam-from">alias: "reading-time"</span>
+            <span class="cam-arrow">&#8594;</span>
+            <span class="cam-to">readingTime</span>
+          </div>
+          <div class="camelize-row">
+            <span class="cam-from">slug: "published-at"</span>
+            <span class="cam-arrow">&#8594;</span>
+            <span class="cam-to">publishedAt</span>
+          </div>
+          <div class="camelize-row">
+            <span class="cam-from">slug: "hero-title"</span>
+            <span class="cam-arrow">&#8594;</span>
+            <span class="cam-to">heroTitle</span>
+          </div>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:12px;">Same keys apply for filtering (<code style="font-family:monospace;">filter[readingTime]=5</code>), sorting (<code style="font-family:monospace;">sort=publishedAt:desc</code>), and projection (<code style="font-family:monospace;">?fields=heroTitle</code>).</p>
+        </div>
+
+        <div class="auth-table-box">
+          <div style="font-size:15px;font-weight:700;margin-bottom:20px;letter-spacing:-0.01em;">Endpoints &amp; Authentication</div>
+          <table class="api-table" style="margin-bottom:24px;">
+            <thead><tr><th style="width:60px;">Method</th><th>Path</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="http-get">GET</span></td>
+                <td><div class="url-text">/api/v1/{tenantSlug}/{contentTypeSlug}</div></td>
+              </tr>
+              <tr>
+                <td><span class="http-get">GET</span></td>
+                <td><div class="url-text">/api/v1/{tenantSlug}/{contentTypeSlug}/{id}</div></td>
+              </tr>
+              <tr>
+                <td><span class="http-get">GET</span></td>
+                <td><div class="url-text">/api/v1/{tenantSlug}/{contentTypeSlug}/slug/{slug}</div></td>
+              </tr>
+              <tr>
+                <td><span class="http-post">POST</span></td>
+                <td><div class="url-text">/api/v1/{tenantSlug}/{contentTypeSlug}</div><div class="url-cond">requires allow_create = 1</div></td>
+              </tr>
+              <tr>
+                <td><span class="http-put">PUT</span></td>
+                <td><div class="url-text">/api/v1/{tenantSlug}/{contentTypeSlug}/{id}</div><div class="url-cond">requires allow_update = 1</div></td>
+              </tr>
+              <tr>
+                <td><span class="http-delete">DELETE</span></td>
+                <td><div class="url-text">/api/v1/{tenantSlug}/{contentTypeSlug}/{id}</div><div class="url-cond">requires allow_delete = 1</div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="height:1px;background:var(--border-subtle);margin-bottom:18px;"></div>
+          <table class="api-table">
+            <thead><tr><th>Auth Type</th><th>Header</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="auth-type">None</span></td>
+                <td><span class="auth-header">—</span></td>
+                <td><span class="auth-note">Public; no credential needed</span></td>
+              </tr>
+              <tr>
+                <td><span class="auth-type">ApiKey</span></td>
+                <td><span class="auth-header">X-API-Key: vk_{credId}_{secret}</span></td>
+                <td><span class="auth-note">BCrypt verify; one key → N content types</span></td>
+              </tr>
+              <tr>
+                <td><span class="auth-type">JWT Bearer</span></td>
+                <td><span class="auth-header">Authorization: Bearer {token}</span></td>
+                <td><span class="auth-note">CMS-issued HS256; claims: tenant + ct slugs</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- curl example + JSON response -->
+      <div class="api-code-section reveal">
+        <div class="code-block">
+          <div class="code-block-bar">
+            <div class="code-block-dots"><div class="td-red"></div><div class="td-amber"></div><div class="td-green"></div></div>
+            <span class="code-lang">bash — curl example</span>
+          </div>
+          <div class="code-body">
+<pre><span class="t-comment"># GET with lang, sort, and API Key auth</span>
+<span class="t-prompt">$ </span><span class="t-cmd">curl <span class="t-flag">\</span></span>
+  <span class="t-string">"https://dev-tenant.cms.example.com/api/v1/</span>
+<span class="t-string">dev-tenant/blog-post?lang=en&amp;sort=publishedAt:desc&amp;page=1"</span> <span class="t-flag">\</span>
+  <span class="t-cmd">-H</span> <span class="t-string">"X-API-Key: vk_1_demo123secret"</span>
+
+<span class="t-comment"># With field projection (camelCase keys)</span>
+<span class="t-prompt">$ </span><span class="t-cmd">curl <span class="t-flag">\</span></span>
+  <span class="t-string">"...?fields=title,seoMetaDescription,publishedAt"</span> <span class="t-flag">\</span>
+  <span class="t-cmd">-H</span> <span class="t-string">"X-API-Key: vk_1_demo123secret"</span>
+
+<span class="t-comment"># Filter by camelCase field slug</span>
+<span class="t-prompt">$ </span><span class="t-cmd">curl <span class="t-flag">\</span></span>
+  <span class="t-string">"...?filter[isFeatures]=true&amp;filter[readingTime]=5"</span> <span class="t-flag">\</span>
+  <span class="t-cmd">-H</span> <span class="t-string">"Authorization: Bearer eyJ..."</span>
+
+<span class="t-comment"># Response headers (rate limiting)</span>
+<span class="t-success">X-RateLimit-Limit: 60</span>
+<span class="t-success">X-RateLimit-Remaining: 45</span>
+<span class="t-success">X-RateLimit-Reset: 1705312800</span></pre>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-block-bar">
+            <div class="code-block-dots"><div class="td-red"></div><div class="td-amber"></div><div class="td-green"></div></div>
+            <span class="code-lang">JSON Response</span>
+          </div>
+          <div class="code-body">
+<pre><span class="j-punct">{</span>
+  <span class="j-key">"data"</span><span class="j-punct">: [{</span>
+    <span class="j-key">"id"</span><span class="j-punct">:</span> <span class="j-num">1</span><span class="j-punct">,</span>
+    <span class="j-key">"slug"</span><span class="j-punct">:</span> <span class="j-str">"getting-started"</span><span class="j-punct">,</span>
+    <span class="j-key">"fields"</span><span class="j-punct">: {</span>
+      <span class="j-key">"title"</span><span class="j-punct">:</span> <span class="j-str">"Getting Started with Varyo CMS"</span><span class="j-punct">,</span>
+      <span class="j-key">"content"</span><span class="j-punct">:</span> <span class="j-str">"&lt;p&gt;...&lt;/p&gt;"</span><span class="j-punct">,</span>
+      <span class="j-key">"category"</span><span class="j-punct">: {</span>
+        <span class="j-key">"id"</span><span class="j-punct">:</span> <span class="j-num">1</span><span class="j-punct">,</span>
+        <span class="j-key">"displayValue"</span><span class="j-punct">:</span> <span class="j-str">"Technology"</span>
+      <span class="j-punct">},</span>
+      <span class="j-key">"authors"</span><span class="j-punct">: [</span>
+        <span class="j-punct">{</span> <span class="j-key">"id"</span><span class="j-punct">:</span> <span class="j-num">2</span><span class="j-punct">,</span> <span class="j-key">"displayValue"</span><span class="j-punct">:</span> <span class="j-str">"Alice Johnson"</span> <span class="j-punct">},</span>
+        <span class="j-punct">{</span> <span class="j-key">"id"</span><span class="j-punct">:</span> <span class="j-num">3</span><span class="j-punct">,</span> <span class="j-key">"displayValue"</span><span class="j-punct">:</span> <span class="j-str">"Bob Martinez"</span> <span class="j-punct">}</span>
+      <span class="j-punct">],</span>
+      <span class="j-key">"publishedAt"</span><span class="j-punct">:</span> <span class="j-str">"2026-01-10T09:00:00"</span><span class="j-punct">,</span>
+      <span class="j-key">"readingTime"</span><span class="j-punct">:</span> <span class="j-num">5.0</span><span class="j-punct">,</span>
+      <span class="j-key">"isFeatures"</span><span class="j-punct">:</span> <span class="j-bool">true</span>
+    <span class="j-punct">},</span>
+    <span class="j-key">"meta"</span><span class="j-punct">: {</span>
+      <span class="j-key">"status"</span><span class="j-punct">:</span> <span class="j-str">"published"</span><span class="j-punct">,</span>
+      <span class="j-key">"language"</span><span class="j-punct">:</span> <span class="j-str">"en"</span><span class="j-punct">,</span>
+      <span class="j-key">"createdAt"</span><span class="j-punct">:</span> <span class="j-str">"2026-01-10T08:00:00Z"</span>
+    <span class="j-punct">}</span>
+  <span class="j-punct">}],</span>
+  <span class="j-key">"pagination"</span><span class="j-punct">: {</span>
+    <span class="j-key">"page"</span><span class="j-punct">:</span> <span class="j-num">1</span><span class="j-punct">,</span> <span class="j-key">"pageSize"</span><span class="j-punct">:</span> <span class="j-num">20</span><span class="j-punct">,</span>
+    <span class="j-key">"total"</span><span class="j-punct">:</span> <span class="j-num">42</span><span class="j-punct">,</span> <span class="j-key">"totalPages"</span><span class="j-punct">:</span> <span class="j-num">3</span>
+  <span class="j-punct">}</span>
+<span class="j-punct">}</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Query params reference -->
+      <div class="api-params-grid reveal">
+        <div class="api-param-card">
+          <div class="api-param-name">lang=en</div>
+          <div class="api-param-desc">Language code for localized fields. Defaults to tenant's default language.</div>
+        </div>
+        <div class="api-param-card">
+          <div class="api-param-name">page=1&amp;pageSize=20</div>
+          <div class="api-param-desc">Pagination. Requires <code style="font-family:monospace;font-size:10px;">allow_pagination = 1</code> on the API config.</div>
+        </div>
+        <div class="api-param-card">
+          <div class="api-param-name">filter[fieldKey]=value</div>
+          <div class="api-param-desc">EAV field filtering. Key is camelCase slug or alias. Requires <code style="font-family:monospace;font-size:10px;">allow_filtering = 1</code>.</div>
+        </div>
+        <div class="api-param-card">
+          <div class="api-param-name">sort=publishedAt:desc</div>
+          <div class="api-param-desc">Sort by camelCase field key or built-ins: <code style="font-family:monospace;font-size:10px;">id</code>, <code style="font-family:monospace;font-size:10px;">createdAt</code>, <code style="font-family:monospace;font-size:10px;">updatedAt</code>, <code style="font-family:monospace;font-size:10px;">status</code>.</div>
+        </div>
+        <div class="api-param-card">
+          <div class="api-param-name">fields=title,category</div>
+          <div class="api-param-desc">Field projection — camelCase keys only. Reduces response payload.</div>
+        </div>
+        <div class="api-param-card">
+          <div class="api-param-name">X-RateLimit-* headers</div>
+          <div class="api-param-desc">Sliding-window per tenant+config. Default 60 req/min. HTTP 429 + Retry-After on exceed.</div>
+        </div>
+      </div>
+
+      <!-- Admin config steps -->
+      <div class="api-admin-steps reveal">
+        <div class="admin-steps-title">Configuring an API endpoint in the admin panel</div>
+        <div class="admin-steps-grid">
+          <div class="admin-step">
+            <div class="admin-step-num">1</div>
+            <div class="admin-step-body">
+              <div class="admin-step-title">Toggle &amp; Auth</div>
+              <div class="admin-step-desc">Enable the content type, choose auth type (None / ApiKey / JWT), set verb flags (read, create, update, delete).</div>
+            </div>
+          </div>
+          <div class="admin-step">
+            <div class="admin-step-num">2</div>
+            <div class="admin-step-body">
+              <div class="admin-step-title">Rate Limit &amp; Cache</div>
+              <div class="admin-step-desc">Set requests per minute and cache TTL in seconds. In-memory sliding window per tenant + config ID.</div>
+            </div>
+          </div>
+          <div class="admin-step">
+            <div class="admin-step-num">3</div>
+            <div class="admin-step-body">
+              <div class="admin-step-title">Field Visibility</div>
+              <div class="admin-step-desc">Checkbox per field to include/exclude from responses. Unconfigured fields default to visible.</div>
+            </div>
+          </div>
+          <div class="admin-step">
+            <div class="admin-step-num">4</div>
+            <div class="admin-step-body">
+              <div class="admin-step-title">Field Aliasing</div>
+              <div class="admin-step-desc">Enter kebab-case alias per field (e.g. <code style="font-family:monospace;font-size:10px;">reading-time</code>). System normalizes to camelCase in response.</div>
+            </div>
+          </div>
+          <div class="admin-step">
+            <div class="admin-step-num">5</div>
+            <div class="admin-step-body">
+              <div class="admin-step-title">Model Preview</div>
+              <div class="admin-step-desc">Live example request and response JSON with camelCase keys, shown inline in the config page.</div>
+            </div>
+          </div>
+          <div class="admin-step">
+            <div class="admin-step-num">6</div>
+            <div class="admin-step-body">
+              <div class="admin-step-title">Generate Credential</div>
+              <div class="admin-step-desc">Generate or rotate an API Key or JWT token — shown once, copy immediately. One credential covers N content types.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Explorer -->
+      <div class="api-explorer-box reveal">
+        <div class="api-explorer-left">
+          <div class="api-explorer-title">API Explorer — credential-gated documentation</div>
+          <div class="api-explorer-desc">
+            Anyone with a valid credential can browse self-documentation: accessible endpoints, field list with types and camelCase API keys, and an example request/response. Enter an API Key (<code style="font-family:monospace;font-size:12px;">vk_...</code>) or JWT Bearer (<code style="font-family:monospace;font-size:12px;">eyJ...</code>) to unlock.
+          </div>
+          <div class="api-explorer-url">/api/docs/{tenantSlug}</div>
+        </div>
+        <div style="flex-shrink:0;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--indigo-light);display:inline-block;"></span>
+              Field types + localization flags
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block;"></span>
+              camelCase API key per field
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+              <span style="width:8px;height:8px;border-radius:50%;background:#c084fc;display:inline-block;"></span>
+              Example request &amp; response JSON
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block;"></span>
+              Auth type + verb permissions
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── QUICK START ───────────────────────────────────────────── -->
+  <section id="quickstart">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Quick Start</div>
+        <h2 class="section-title">Up and running in minutes</h2>
+        <p class="section-subtitle">
+          Choose Docker for the quickest path — SQL Server and migrations handled in three commands. Or use the classic publish path for production environments.
+        </p>
+      </div>
+
+      <div class="qs-grid reveal">
+
+        <!-- Option A: Docker -->
+        <div>
+          <div class="qs-col-title"><span class="qs-option-label">A</span> Docker</div>
+          <div class="code-block">
+            <div class="code-block-bar">
+              <div class="code-block-dots"><div class="td-red"></div><div class="td-amber"></div><div class="td-green"></div></div>
+              <span class="code-lang">bash</span>
+            </div>
+            <div class="code-body">
+<pre><span class="t-comment"># Step 1 — Start SQL Server container</span>
+<span class="t-prompt">$ </span><span class="t-cmd">docker-compose <span class="t-flag">-f</span> docker/docker-compose.yml up <span class="t-flag">-d</span></span>
+
+<span class="t-comment"># Step 2 — Apply schema migration</span>
+<span class="t-prompt">$ </span><span class="t-cmd">docker exec varyo_db \</span>
+  <span class="t-cmd">/opt/mssql-tools18/bin/sqlcmd \</span>
+  <span class="t-flag">-S</span> localhost <span class="t-flag">-U</span> sa <span class="t-flag">-P</span> <span class="t-string">"YourPass!"</span> <span class="t-flag">-C \</span>
+  <span class="t-flag">-d</span> Varyo <span class="t-flag">-i</span> /migrations/001_v1_schema.sql <span class="t-flag">-b</span>
+
+<span class="t-comment"># Step 3 — Apply dev seed (optional)</span>
+<span class="t-prompt">$ </span><span class="t-cmd">docker exec varyo_db \</span>
+  <span class="t-cmd">/opt/mssql-tools18/bin/sqlcmd \</span>
+  <span class="t-flag">-S</span> localhost <span class="t-flag">-U</span> sa <span class="t-flag">-P</span> <span class="t-string">"YourPass!"</span> <span class="t-flag">-C \</span>
+  <span class="t-flag">-d</span> Varyo <span class="t-flag">-i</span> /migrations/002_v1_dev_seed.sql <span class="t-flag">-b</span>
+
+<span class="t-comment"># Step 4 — Run the app</span>
+<span class="t-prompt">$ </span><span class="t-cmd">dotnet run <span class="t-flag">--project</span> src/VaryoCms.Web</span>
+
+<span class="t-success">info: Now listening on http://localhost:5267</span>
+<span class="t-comment"># Login: admin@dev.local / Admin123!</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option B: Classic -->
+        <div>
+          <div class="qs-col-title"><span class="qs-option-label">B</span> Classic Publish</div>
+          <div class="code-block">
+            <div class="code-block-bar">
+              <div class="code-block-dots"><div class="td-red"></div><div class="td-amber"></div><div class="td-green"></div></div>
+              <span class="code-lang">bash</span>
+            </div>
+            <div class="code-body">
+<pre><span class="t-comment"># Step 1 — Apply migration via sqlcmd</span>
+<span class="t-prompt">$ </span><span class="t-cmd">sqlcmd <span class="t-flag">-S</span> your-server <span class="t-flag">-U</span> sa \</span>
+  <span class="t-flag">-P</span> <span class="t-string">"YourPass!"</span> <span class="t-flag">-d</span> Varyo \</span>
+  <span class="t-flag">-i</span> db/migrations/001_v1_schema.sql <span class="t-flag">-b</span>
+
+<span class="t-comment"># Step 2 — Publish the app</span>
+<span class="t-prompt">$ </span><span class="t-cmd">dotnet publish src/VaryoCms.Web \</span>
+  <span class="t-flag">-c</span> Release <span class="t-flag">-o</span> ./publish
+
+<span class="t-comment"># Step 3 — Set environment variables</span>
+<span class="t-prompt">$ </span><span class="t-cmd">export <span class="t-string">ConnectionStrings__DefaultConnection=\</span></span>
+  <span class="t-string">"Server=...;Database=Varyo;..."</span>
+<span class="t-prompt">$ </span><span class="t-cmd">export <span class="t-string">Jwt__SigningKey=</span><span class="t-string">"your-256-bit-secret"</span></span>
+<span class="t-prompt">$ </span><span class="t-cmd">export <span class="t-string">DevTenantSlug=</span><span class="t-string">"your-tenant"</span></span>
+
+<span class="t-comment"># Step 4 — Run</span>
+<span class="t-prompt">$ </span><span class="t-cmd">dotnet publish/VaryoCms.Web.dll</span>
+
+<span class="t-success">info: Now listening on http://0.0.0.0:5267</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FIELD TYPES ───────────────────────────────────────────── -->
+  <section id="fields">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Field Type Catalog</div>
+        <h2 class="section-title">30+ field types, every use case covered</h2>
+        <p class="section-subtitle">
+          Every field type has a dedicated server-side validator, a tailored UI component, and a defined API representation. Add any field to any content type without schema changes.
+        </p>
+      </div>
+
+      <div class="fields-badge-wrap reveal">
+        <span class="field-chip chip-text">Text</span>
+        <span class="field-chip chip-text">RichText</span>
+        <span class="field-chip chip-text">Markdown</span>
+        <span class="field-chip chip-text">CodeSnippet</span>
+        <span class="field-chip chip-text">Email</span>
+        <span class="field-chip chip-text">URL</span>
+        <span class="field-chip chip-text">Phone</span>
+        <span class="field-chip chip-text">Password</span>
+        <span class="field-chip chip-text">Slug</span>
+        <span class="field-chip chip-number">Number</span>
+        <span class="field-chip chip-number">Decimal</span>
+        <span class="field-chip chip-number">Rating</span>
+        <span class="field-chip chip-number">Boolean</span>
+        <span class="field-chip chip-date">Date</span>
+        <span class="field-chip chip-date">DateTime</span>
+        <span class="field-chip chip-date">Time</span>
+        <span class="field-chip chip-date">DateRange</span>
+        <span class="field-chip chip-media">Image</span>
+        <span class="field-chip chip-media">Video</span>
+        <span class="field-chip chip-media">Audio</span>
+        <span class="field-chip chip-media">File</span>
+        <span class="field-chip chip-media">Gallery</span>
+        <span class="field-chip chip-relation">Relation</span>
+        <span class="field-chip chip-relation">MultiRelation</span>
+        <span class="field-chip chip-relation">JSON</span>
+        <span class="field-chip chip-relation">GeoLocation</span>
+        <span class="field-chip chip-special">Select</span>
+        <span class="field-chip chip-special">MultiSelect</span>
+        <span class="field-chip chip-special">Tags</span>
+        <span class="field-chip chip-special">Color</span>
+      </div>
+
+      <div style="text-align:center;" class="reveal">
+        <span class="field-count-highlight">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          30+ field types &mdash; all EAV-stored, all API-exposed
+        </span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px;" class="reveal">
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:18px 22px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--indigo-light);margin-bottom:10px;">Text &amp; Content</div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">Text, RichText (TinyMCE), Markdown (CodeMirror + preview), CodeSnippet (Monaco), Slug, Password, Email, URL, Phone, Color</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:18px 22px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;">Numbers, Dates &amp; Media</div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">Number, Decimal, Boolean, Rating (1–5 or 1–10), Date, DateTime, Time, DateRange (Flatpickr), Image, Video, Audio, File, Gallery</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:18px 22px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--sky);margin-bottom:10px;">Relations &amp; Structured</div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">Relation (AJAX search picker), MultiRelation (min/max aware), Select, MultiSelect, Tags (free-form), GeoLocation (Leaflet map), JSON (Monaco)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ────────────────────────────────────────────────── -->
+  <div class="gradient-divider"></div>
+  <footer>
+    <div class="container">
+      <div class="footer-logo">
+        <div class="footer-logo-icon">✦</div>
+        Varyo CMS
+      </div>
+      <p class="footer-copy">Released under the MIT License</p>
+      <div class="footer-links">
+        <a href="https://github.com/mrtozn1923/VaryoCMS" target="_blank" rel="noopener">GitHub</a>
+        <a href="#features">Features</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#eav">EAV Model</a>
+        <a href="#api">Public API</a>
+        <a href="#quickstart">Quick Start</a>
+        <a href="#fields">Field Types</a>
+      </div>
+      <div class="footer-tech">
+        <span class="tech-chip">ASP.NET Core 8 MVC</span>
+        <span class="tech-chip">Dapper</span>
+        <span class="tech-chip">SQL Server 2022</span>
+        <span class="tech-chip">Docker</span>
+        <span class="tech-chip">BCrypt</span>
+        <span class="tech-chip">Serilog</span>
+        <span class="tech-chip">FluentValidation</span>
+        <span class="tech-chip">SortableJS</span>
+        <span class="tech-chip">SixLabors.ImageSharp</span>
+        <span class="tech-chip">Clean Architecture</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── JS ────────────────────────────────────────────────────── -->
+  <script>
+    // Scroll reveal
+    const revealEls = document.querySelectorAll('.reveal');
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const siblings = Array.from(entry.target.parentElement.querySelectorAll('.reveal'));
+          const idx = siblings.indexOf(entry.target);
+          entry.target.style.transitionDelay = Math.min(idx * 70, 280) + 'ms';
+          entry.target.classList.add('visible');
+          revealObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+    revealEls.forEach(el => revealObs.observe(el));
+
+    // Card radial mouse glow
+    function handleCardMouse(e, card) {
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100).toFixed(1) + '%');
+      card.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100).toFixed(1) + '%');
+    }
+
+    // Active nav link on scroll
+    const navSections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-links a');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      navSections.forEach(sec => {
+        if (window.scrollY >= sec.offsetTop - 110) current = sec.id;
+      });
+      navLinks.forEach(a => {
+        a.style.color = a.getAttribute('href') === '#' + current ? 'var(--text-primary)' : '';
+      });
+    }, { passive: true });
+  </script>
+</body>
+</html>

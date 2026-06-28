@@ -1,0 +1,29 @@
+@model LanguageSwitcherViewModel
+@{
+    var current = Model.Languages.FirstOrDefault(l =>
+        string.Equals(l.Code, Model.CurrentCode, StringComparison.OrdinalIgnoreCase));
+    var label = current?.Code.ToUpper() ?? Model.CurrentCode.ToUpper();
+}
+
+@if (Model.Languages.Count > 1)
+{
+    <div class="dropdown">
+        <button class="cms-action-btn dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false" title="@L["Topbar.EditingLanguage"]" style="width:auto;padding:0 .6rem;gap:.35rem;">
+            <i class="bi bi-translate"></i><span>@label</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            @foreach (var l in Model.Languages)
+            {
+                var isCurrent = string.Equals(l.Code, Model.CurrentCode, StringComparison.OrdinalIgnoreCase);
+                <li>
+                    <a class="dropdown-item @(isCurrent ? "active" : "")"
+                       asp-controller="LanguagePreference" asp-action="Set"
+                       asp-route-code="@l.Code" asp-route-returnUrl="@Model.ReturnUrl">
+                        <span class="cms-mono me-1">@l.Code.ToUpper()</span> @l.Name
+                    </a>
+                </li>
+            }
+        </ul>
+    </div>
+}

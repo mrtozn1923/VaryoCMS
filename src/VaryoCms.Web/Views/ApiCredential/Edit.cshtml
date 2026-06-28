@@ -1,0 +1,130 @@
+@model ApiCredentialFormViewModel
+@{
+    ViewData["Title"] = string.Format(L["Api.EditCredential"].Value, Model.Name);
+    ViewData["ApiActiveTab"] = "credentials";
+}
+@section Breadcrumb {
+    <a asp-action="Index">@L["Api.Credentials"]</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i>
+    @Model.Name
+}
+
+<partial name="_ApiTabs" />
+
+@* One-time key / token shown after creation or rotate *@
+@if (TempData["NewSecret"] is string secret)
+{
+    <div class="cms-alert-success mb-3 d-block">
+        <strong>
+            @if (Model.AuthType == "JWT")
+            {
+                <i class="bi bi-shield-lock me-1"></i>@L["Api.NewToken"]
+            }
+            else
+            {
+                <i class="bi bi-key me-1"></i>@L["Api.NewApiKey"]
+            }
+        </strong>
+        <code class="d-block mt-1 user-select-all" style="word-break:break-all;">@secret</code>
+        <small class="d-block mt-1 text-muted"><i class="bi bi-eye-slash me-1"></i>@L["Api.KeyShownOnce"]</small>
+    </div>
+}
+@if (TempData["SaveOk"] is bool)
+{
+    <div class="cms-alert-success mb-3"><i class="bi bi-check-circle me-1"></i>@L["Common.SavedSuccessfully"]</div>
+}
+@if (TempData["CredentialError"] is string credErr)
+{
+    <div class="cms-alert-danger mb-3"><i class="bi bi-exclamation-triangle-fill"></i><span>@credErr</span></div>
+}
+
+<div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
+            @Html.AntiForgeryToken()
+            <partial name="_CredentialFormBody" model="Model" />
+            <div class="cms-form-footer">
+                <a class="btn btn-outline-secondary" asp-action="Index">@L["Common.Cancel"]</a>
+                <button type="submit" class="btn cms-btn-primary">@L["Common.SaveChanges"]</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        @* Credential actions *@
+        <div class="card cms-card mb-3">
+            <div class="card-header cms-card-header">
+                <h5 class="card-title mb-0">
+                    @if (Model.AuthType == "JWT")
+                    {
+                        <i class="bi bi-shield-lock me-1"></i>@L["Api.BearerToken"]
+                    }
+                    else
+                    {
+                        <i class="bi bi-key me-1"></i>@L["Api.ApiKey"]
+                    }
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.AuthType == "ApiKey")
+                {
+                    <p class="cms-hint">
+                        @(Model.HasApiKey ? L["Api.ApiKeySet"].Value : L["Api.ApiKeyNone"].Value)
+                    </p>
+                    <form method="post" asp-action="RotateKey" asp-route-id="@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-repeat me-1"></i>
+                            @(Model.HasApiKey ? L["Api.RotateApiKey"].Value : L["Api.GenerateApiKey"].Value)
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <p class="cms-hint">@L["Api.BearerTokenHint"]</p>
+                    <form method="post" asp-action="GenerateToken" asp-route-id="@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-shield-lock me-1"></i>@L["Api.GenerateToken"]
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        @* Curl preview *@
+        <div class="card cms-card mb-3">
+            <div class="card-header cms-card-header"><h5 class="card-title mb-0">@L["Api.CurlPreviewTitle"]</h5></div>
+            <div class="card-body">
+                @if (Model.AuthType == "ApiKey")
+                {
+                    <pre class="cms-pre"><code>curl "{baseUrl}/api/v1/{tenant}/{slug}" \
+  -H "X-API-Key: vk_{id}_{secret}"</code></pre>
+                }
+                else
+                {
+                    <pre class="cms-pre"><code>curl "{baseUrl}/api/v1/{tenant}/{slug}" \
+  -H "Authorization: Bearer {token}"</code></pre>
+                }
+                <p class="cms-hint mb-0">@L["Api.CredentialCoversAllGranted"]</p>
+            </div>
+        </div>
+
+        @* Danger zone: delete *@
+        <div class="card cms-card border-danger">
+            <div class="card-body">
+                <h6 class="fw-semibold text-danger mb-2">@L["Api.DangerZone"]</h6>
+                <p class="cms-hint">@L["Api.DeleteCredentialHint"]</p>
+                <form method="post" asp-action="Delete" asp-route-id="@Model.Id"
+                      onsubmit="return confirm('@L["Api.DeleteCredentialConfirm"]');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-trash me-1"></i>@L["Api.DeleteCredential"]
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

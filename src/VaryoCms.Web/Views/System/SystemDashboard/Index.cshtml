@@ -1,0 +1,97 @@
+@model SystemDashboardDto
+@{
+    ViewData["Title"] = L["Dashboard.Title"].Value;
+}
+
+@section PageActions {
+    <a class="btn cms-btn-primary" asp-controller="SystemTenants" asp-action="Create">
+        <i class="bi bi-plus-lg me-1"></i> @L["Tenant.New"]
+    </a>
+}
+
+<div class="cms-stat-grid mb-4">
+    <div class="cms-stat-card">
+        <div class="cms-stat-icon"><i class="bi bi-buildings"></i></div>
+        <div>
+            <div class="cms-stat-value">@Model.TotalTenants</div>
+            <div class="cms-stat-label">@L["Tenant.Tenants"]</div>
+        </div>
+    </div>
+    <div class="cms-stat-card">
+        <div class="cms-stat-icon"><i class="bi bi-check2-circle"></i></div>
+        <div>
+            <div class="cms-stat-value">@Model.ActiveTenants</div>
+            <div class="cms-stat-label">@L["Dashboard.ActiveTenants"]</div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Tenants.Count == 0)
+{
+    <div class="cms-empty-state">
+        <i class="bi bi-buildings cms-empty-icon"></i>
+        <h5>@L["Tenant.EmptyTitle"]</h5>
+        <p class="text-muted">@L["Tenant.EmptyText"]</p>
+        <a class="btn cms-btn-primary" asp-controller="SystemTenants" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i> @L["Tenant.New"]
+        </a>
+    </div>
+}
+else
+{
+    <div class="cms-table-wrapper">
+        <div class="table-responsive">
+            <table class="table cms-table">
+                <thead>
+                    <tr>
+                        <th>@L["Tenant.Tenant"]</th>
+                        <th class="text-center" style="width:90px">@L["Common.Users"]</th>
+                        <th class="text-center" style="width:120px">@L["Common.ContentTypes"]</th>
+                        <th style="width:110px">@L["Common.Status"]</th>
+                        <th style="width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var t in Model.Tenants)
+                {
+                    <tr>
+                        <td>
+                            <span class="cms-table-title">@t.Name</span>
+                            <span class="cms-table-meta">@t.Slug</span>
+                        </td>
+                        <td class="text-center">@t.UserCount</td>
+                        <td class="text-center">@t.ContentTypeCount</td>
+                        <td>
+                            @if (t.IsActive)
+                            {
+                                <span class="badge cms-badge-success">@L["Common.Active"]</span>
+                            }
+                            else
+                            {
+                                <span class="badge cms-badge-secondary">@L["Common.Inactive"]</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="cms-row-actions">
+                                @if (t.IsActive)
+                                {
+                                    <form method="post" asp-controller="Impersonation" asp-action="Start" asp-route-tenantId="@t.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="cms-action-btn" title="@L["Dashboard.Impersonate"]">
+                                            <i class="bi bi-incognito"></i>
+                                        </button>
+                                    </form>
+                                }
+                                <a class="cms-action-btn" title="@L["Common.Edit"]"
+                                   asp-controller="SystemTenants" asp-action="Edit" asp-route-id="@t.Id">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -1,0 +1,284 @@
+@model AuditLogListViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = L["Log.Title"].Value;
+}
+@section Breadcrumb {
+    @L["Log.Title"]
+}
+@section PageActions {
+    <span class="text-muted small">@Model.TotalCount @L["Common.Results"]</span>
+}
+
+<form method="get" class="cms-filter-bar mb-4 row g-2 align-items-end" autocomplete="off">
+    <div class="col-sm-3">
+        <input class="form-control form-control-sm" name="filterAction" value="@Model.FilterAction"
+               placeholder="@L["Log.FilterAction"]" autocomplete="off" />
+    </div>
+    <div class="col-sm-3">
+        <input class="form-control form-control-sm" name="entityType" value="@Model.FilterEntityType"
+               placeholder="@L["Log.FilterEntity"]" autocomplete="off" />
+    </div>
+    <div class="col-sm-2">
+        <input type="date" class="form-control form-control-sm" name="dateFrom"
+               value="@Model.FilterDateFrom?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-sm-2">
+        <input type="date" class="form-control form-control-sm" name="dateTo"
+               value="@Model.FilterDateTo?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-search me-1"></i>@L["Common.Filter"]
+        </button>
+        <a href="/admin/logs" class="btn btn-outline-secondary btn-sm ms-1">@L["Common.Reset"]</a>
+    </div>
+</form>
+
+@if (!Model.Items.Any())
+{
+    <div class="cms-empty-state">
+        <i class="bi bi-journal-x cms-empty-icon"></i>
+        <p>@L["Log.Empty"]</p>
+    </div>
+}
+else
+{
+    <div class="cms-table-wrapper">
+        <div class="table-responsive">
+            <table class="table cms-table">
+                <thead>
+                    <tr>
+                        <th style="width:240px">@L["Log.ColAction"]</th>
+                        <th style="width:200px">@L["Log.ColUser"]</th>
+                        <th>@L["Log.ColEntity"]</th>
+                        <th style="width:150px">@L["Log.ColDate"]</th>
+                        <th style="width:24px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Model.Items)
+                    {
+                        var actionLabel = L["AuditAction." + entry.Action].Value;
+                        var detailJson = JsonSerializer.Serialize(new {
+                            id          = entry.Id,
+                            action      = entry.Action,
+                            actionLabel = actionLabel,
+                            userEmail   = entry.UserEmail,
+                            userRole    = entry.UserRole,
+                            entityType  = entry.EntityType,
+                            entityId    = entry.EntityId,
+                            entityName  = entry.EntityName,
+                            description = entry.Description,
+                            metadataJson= entry.MetadataJson,
+                            ipAddress   = entry.IpAddress,
+                            createdAt   = entry.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm:ss")
+                        });
+                        <tr class="audit-row" data-detail="@Html.Raw(System.Web.HttpUtility.HtmlAttributeEncode(detailJson))">
+                            <td>
+                                <span class="badge @AuditBadgeClass(entry.Action)" title="@entry.Action">
+                                    @actionLabel
+                                </span>
+                            </td>
+                            <td>
+                                <span class="cms-table-title" style="font-size:0.82rem">@(entry.UserEmail ?? "—")</span>
+                                @if (entry.UserRole != null)
+                                {
+                                    <span class="cms-table-meta">@entry.UserRole</span>
+                                }
+                            </td>
+                            <td>
+                                @if (entry.EntityName != null)
+                                {
+                                    <span class="fw-500" style="font-size:0.875rem">@entry.EntityName</span>
+                                    @if (entry.EntityType != null)
+                                    {
+                                        <span class="text-muted small ms-1">(@entry.EntityType)</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="text-muted small d-block">
+                                    @entry.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")
+                                </span>
+                                <span class="text-muted" style="font-size:0.75rem">
+                                    @entry.CreatedAt.ToLocalTime().ToString("HH:mm")
+                                </span>
+                            </td>
+                            <td>
+                                <i class="bi bi-chevron-right text-muted" style="font-size:0.7rem"></i>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination pagination-sm">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link"
+                           href="?page=@p&filterAction=@Model.FilterAction&entityType=@Model.FilterEntityType&dateFrom=@Model.FilterDateFrom?.ToString("yyyy-MM-dd")&dateTo=@Model.FilterDateTo?.ToString("yyyy-MM-dd")">
+                            @p
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}
+
+<!-- Detail Modal -->
+<div class="modal fade" id="auditDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:1px solid var(--cms-border); padding:1rem 1.25rem">
+                <div>
+                    <h6 class="modal-title mb-1" style="font-weight:600">İşlem Detayı</h6>
+                    <span id="mdl-action-badge" class="badge me-1"></span>
+                    <span id="mdl-action-code" class="text-muted" style="font-size:0.72rem;font-family:'JetBrains Mono',monospace"></span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:1.25rem">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <div class="cms-detail-block">
+                            <div class="cms-detail-label">Kullanıcı</div>
+                            <div id="mdl-user-email" class="cms-detail-value"></div>
+                            <div id="mdl-user-role" class="text-muted small"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="cms-detail-block">
+                            <div class="cms-detail-label">Varlık</div>
+                            <div id="mdl-entity-name" class="cms-detail-value"></div>
+                            <div id="mdl-entity-type" class="text-muted small"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="cms-detail-block">
+                            <div class="cms-detail-label">Tarih / Saat</div>
+                            <div id="mdl-date" class="cms-detail-value"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6" id="mdl-ip-wrap" style="display:none">
+                        <div class="cms-detail-block">
+                            <div class="cms-detail-label">IP Adresi</div>
+                            <div id="mdl-ip" class="cms-detail-value" style="font-family:'JetBrains Mono',monospace;font-size:0.82rem"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="mdl-desc-wrap" class="mb-3" style="display:none">
+                    <div class="cms-detail-label mb-1">Açıklama</div>
+                    <p id="mdl-desc" class="mb-0" style="font-size:0.875rem"></p>
+                </div>
+
+                <div id="mdl-meta-wrap" style="display:none">
+                    <div class="cms-detail-label mb-2">Değişiklik Detayı</div>
+                    <div id="mdl-meta-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    static string AuditBadgeClass(string action) => action switch {
+        var a when a.StartsWith("Auth.")          => "cms-badge-info",
+        var a when a.StartsWith("ContentItem.")   => "cms-badge-success",
+        var a when a.StartsWith("ContentType.")   => "cms-badge-primary",
+        var a when a.StartsWith("ContentField.")  => "cms-badge-purple",
+        var a when a.StartsWith("Media.")         => "cms-badge-warning",
+        var a when a.StartsWith("User.")          => "cms-badge-secondary",
+        var a when a.StartsWith("Dictionary.")    => "cms-badge-secondary",
+        var a when a.StartsWith("Api.")           => "cms-badge-info",
+        var a when a.StartsWith("System.")        => "cms-badge-danger",
+        _                                         => "cms-badge-secondary"
+    };
+}
+
+@section Scripts {
+<script>
+(function () {
+    function actionBadgeClass(action) {
+        if (action.startsWith('Auth.'))         return 'cms-badge-info';
+        if (action.startsWith('ContentItem.'))  return 'cms-badge-success';
+        if (action.startsWith('ContentType.'))  return 'cms-badge-primary';
+        if (action.startsWith('ContentField.')) return 'cms-badge-purple';
+        if (action.startsWith('Media.'))        return 'cms-badge-warning';
+        if (action.startsWith('User.'))         return 'cms-badge-secondary';
+        if (action.startsWith('Dictionary.'))   return 'cms-badge-secondary';
+        if (action.startsWith('Api.'))          return 'cms-badge-info';
+        if (action.startsWith('System.'))       return 'cms-badge-danger';
+        return 'cms-badge-secondary';
+    }
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function renderMetadata(json) {
+        try {
+            const obj = JSON.parse(json);
+            if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
+                const rows = Object.entries(obj).map(([k, v]) => {
+                    const val = typeof v === 'object' ? JSON.stringify(v) : String(v ?? '');
+                    return `<tr>
+                        <td style="width:40%;padding:0.4rem 0.75rem;border-bottom:1px solid var(--cms-border);color:var(--cms-text-muted);font-size:0.8rem">${escHtml(k)}</td>
+                        <td style="padding:0.4rem 0.75rem;border-bottom:1px solid var(--cms-border);font-size:0.82rem;font-family:'JetBrains Mono',monospace">${escHtml(val)}</td>
+                    </tr>`;
+                }).join('');
+                return `<table class="w-100" style="border:1px solid var(--cms-border);border-radius:var(--cms-radius);overflow:hidden"><tbody>${rows}</tbody></table>`;
+            }
+        } catch (_) {}
+        return `<pre class="small mb-0 p-2" style="background:var(--cms-bg);border-radius:var(--cms-radius);max-height:240px;overflow:auto">${escHtml(json)}</pre>`;
+    }
+
+    document.querySelectorAll('.audit-row').forEach(function(row) {
+        row.addEventListener('click', function () {
+            const d = JSON.parse(this.dataset.detail);
+
+            const badge = document.getElementById('mdl-action-badge');
+            badge.textContent = d.actionLabel || d.action;
+            badge.className   = 'badge me-1 ' + actionBadgeClass(d.action);
+            document.getElementById('mdl-action-code').textContent = d.action;
+
+            document.getElementById('mdl-user-email').textContent = d.userEmail || '—';
+            document.getElementById('mdl-user-role').textContent  = d.userRole  || '';
+
+            const entityName = d.entityName || (d.entityId ? '#' + d.entityId : '—');
+            document.getElementById('mdl-entity-name').textContent = entityName;
+            const typeText = d.entityType ? (d.entityType + (d.entityId ? ' #' + d.entityId : '')) : '—';
+            document.getElementById('mdl-entity-type').textContent = typeText;
+
+            document.getElementById('mdl-date').textContent = d.createdAt || '—';
+
+            const ipWrap = document.getElementById('mdl-ip-wrap');
+            if (d.ipAddress) { ipWrap.style.display = ''; document.getElementById('mdl-ip').textContent = d.ipAddress; }
+            else             { ipWrap.style.display = 'none'; }
+
+            const descWrap = document.getElementById('mdl-desc-wrap');
+            if (d.description) { descWrap.style.display = ''; document.getElementById('mdl-desc').textContent = d.description; }
+            else               { descWrap.style.display = 'none'; }
+
+            const metaWrap = document.getElementById('mdl-meta-wrap');
+            if (d.metadataJson) { metaWrap.style.display = ''; document.getElementById('mdl-meta-content').innerHTML = renderMetadata(d.metadataJson); }
+            else                { metaWrap.style.display = 'none'; }
+
+            new bootstrap.Modal(document.getElementById('auditDetailModal')).show();
+        });
+    });
+}());
+</script>
+}

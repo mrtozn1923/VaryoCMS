@@ -1,0 +1,348 @@
+@{
+    Layout = "_ApiDocsLayout";
+    string tenantSlug = ViewData["TenantSlug"]?.ToString() ?? "";
+}
+
+<header class="doc-header">
+    <div class="doc-brand">
+        <div class="doc-brand-icon">V</div>
+        <span>API Docs</span>
+    </div>
+    <span class="doc-tenant-badge">@tenantSlug</span>
+    <div class="doc-separator"></div>
+    <div class="doc-credential-form">
+        <input type="text" id="credInput" class="doc-cred-input"
+               placeholder="vk_1_... or eyJ..."
+               autocomplete="off" spellcheck="false" />
+        <button id="loadBtn" class="doc-load-btn" onclick="loadDocs()">
+            Load Documentation
+        </button>
+    </div>
+</header>
+
+<div class="doc-body">
+    <div id="docContent">
+        <div class="doc-welcome">
+            <div class="doc-welcome-icon">⬡</div>
+            <h3>API Explorer</h3>
+            <p>Enter your API key (<code>vk_...</code>) or JWT Bearer token (<code>eyJ...</code>) above to load the documentation for your authorized endpoints.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const TENANT = '@tenantSlug';
+    let credInput = null;
+    let loadBtn = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        credInput = document.getElementById('credInput');
+        loadBtn = document.getElementById('loadBtn');
+        credInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadDocs(); });
+
+        const params = new URLSearchParams(location.search);
+        const pre = params.get('credential');
+        if (pre) { credInput.value = pre; loadDocs(); }
+    });
+
+    async function loadDocs() {
+        const credential = credInput.value.trim();
+        if (!credential) return;
+
+        loadBtn.disabled = true;
+        loadBtn.innerHTML = '<span class="doc-spinner"></span> Loading…';
+        setContent('<div class="doc-welcome"><div class="doc-welcome-icon">⬡</div><p>Loading…</p></div>');
+
+        try {
+            const url = `/api/docs/${TENANT}/manifest?credential=${encodeURIComponent(credential)}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                setContent(errorHtml(data.error || 'Failed to load documentation.'));
+                return;
+            }
+
+            renderManifest(data, credential);
+        } catch (err) {
+            setContent(errorHtml('Network error: ' + err.message));
+        } finally {
+            loadBtn.disabled = false;
+            loadBtn.textContent = 'Load Documentation';
+        }
+    }
+
+    function setContent(html) {
+        document.getElementById('docContent').innerHTML = html;
+    }
+
+    function errorHtml(msg) {
+        return `<div class="doc-error"><i class="bi bi-exclamation-circle-fill"></i>${escHtml(msg)}</div>`;
+    }
+
+    function renderManifest(manifest, credential) {
+        const isJwt = credential.startsWith('eyJ');
+        const authHeader = isJwt
+            ? `Authorization: Bearer ${credential}`
+            : `X-API-Key: ${credential}`;
+
+        let html = `<div class="doc-auth-note" style="margin-bottom:28px">
+            <i class="bi bi-shield-check" style="margin-top:1px;flex-shrink:0"></i>
+            <div>
+                <strong>Authentication header required for all requests</strong><br>
+                <code style="font-size:12px">${escHtml(authHeader)}</code>
+            </div>
+        </div>`;
+
+        for (const group of manifest.groups) {
+            html += renderGroup(group, manifest.tenantSlug, credential);
+        }
+
+        if (manifest.groups.length === 0) {
+            html += '<div class="doc-welcome"><p>No API endpoints found for this credential.</p></div>';
+        }
+
+        setContent(html);
+
+        document.querySelectorAll('.doc-endpoint-header').forEach(h => {
+            h.addEventListener('click', () => {
+                const ep = h.closest('.doc-endpoint');
+                ep.classList.toggle('open');
+            });
+        });
+    }
+
+    function renderGroup(group, tenantSlug, credential) {
+        const base = `/api/v1/${tenantSlug}/${group.contentTypeSlug}`;
+        const isJwt = credential.startsWith('eyJ');
+        const authHeader = isJwt
+            ? `Authorization: Bearer ${credential}`
+            : `X-API-Key: ${credential}`;
+
+        let endpoints = '';
+
+        if (group.allowRead) {
+            endpoints += renderEndpoint('GET', base, 'List all records',
+                listParamRows(group.fields),
+                curlExample('GET', base, authHeader),
+                listResponseJson(group.fields));
+
+            endpoints += renderEndpoint('GET', `${base}/{id}`, 'Get record by ID',
+                singleParamRows(),
+                curlExample('GET', `${base}/{id}`, authHeader),
+                singleResponseJson(group.fields));
+
+            endpoints += renderEndpoint('GET', `${base}/slug/{slug}`, 'Get record by slug',
+                singleParamRows(),
+                curlExample('GET', `${base}/slug/{slug}`, authHeader),
+                singleResponseJson(group.fields));
+        }
+
+        if (group.allowCreate) {
+            endpoints += renderEndpoint('POST', base, 'Create new record',
+                writeBodyRows(group.fields),
+                curlExample('POST', base, authHeader, writeBodyJson(group.fields)),
+                writeResponseJson(group.fields));
+        }
+
+        if (group.allowUpdate) {
+            endpoints += renderEndpoint('PUT', `${base}/{id}`, 'Update existing record',
+                writeBodyRows(group.fields),
+                curlExample('PUT', `${base}/{id}`, authHeader, writeBodyJson(group.fields)),
+                writeResponseJson(group.fields));
+        }
+
+        if (group.allowDelete) {
+            endpoints += renderEndpoint('DELETE', `${base}/{id}`, 'Delete record',
+                '',
+                curlExample('DELETE', `${base}/{id}`, authHeader),
+                '204 No Content');
+        }
+
+        if (!group.allowRead && !group.allowCreate && !group.allowUpdate && !group.allowDelete) {
+            endpoints = '<p style="color:var(--doc-muted);font-size:13px;padding:8px 0">No operations are permitted for this credential.</p>';
+        }
+
+        let schemaTable = '';
+        if (group.fields.length > 0) {
+            schemaTable = `
+            <div style="margin-top:32px">
+                <div class="doc-ct-header" style="margin-bottom:12px;border-bottom-width:1px">
+                    <span style="font-size:14px;font-weight:600">Response Fields</span>
+                    <span class="doc-ct-base">${group.fields.length} visible field${group.fields.length !== 1 ? 's' : ''}</span>
+                </div>
+                <table class="doc-params-table">
+                    <thead><tr>
+                        <th>Key</th><th>Field</th><th>Type</th><th>Notes</th>
+                    </tr></thead>
+                    <tbody>${group.fields.map(f => `
+                        <tr>
+                            <td><span class="doc-param-name">${escHtml(f.apiKey)}</span>${f.apiKey !== f.slug ? `<span class="doc-optional-badge">alias</span>` : ''}</td>
+                            <td><span class="doc-param-name">${escHtml(f.name)}</span></td>
+                            <td><span class="doc-param-type">${escHtml(f.jsonType)}</span></td>
+                            <td>
+                                ${f.isRequired ? '<span class="doc-required-badge">required</span>' : ''}
+                                ${f.isLocalized ? '<span class="doc-optional-badge">localized</span>' : ''}
+                            </td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        }
+
+        return `
+        <div class="doc-ct-section">
+            <div class="doc-ct-header">
+                <span class="doc-ct-name">${escHtml(group.contentTypeName)}</span>
+                <span class="doc-ct-base">${escHtml(base)}</span>
+            </div>
+            ${endpoints}
+            ${schemaTable}
+        </div>`;
+    }
+
+    function renderEndpoint(method, path, summary, paramHtml, curlHtml, responseHtml) {
+        const cls = 'method-' + method.toLowerCase();
+        return `
+        <div class="doc-endpoint">
+            <div class="doc-endpoint-header">
+                <span class="doc-method ${cls}">${method}</span>
+                <span class="doc-endpoint-path">${escHtml(path)}</span>
+                <span class="doc-endpoint-summary">${escHtml(summary)}</span>
+                <i class="bi bi-chevron-right doc-endpoint-chevron"></i>
+            </div>
+            <div class="doc-endpoint-body">
+                ${paramHtml ? `<div class="doc-section-label">${method === 'POST' || method === 'PUT' ? 'Request Body' : 'Query Parameters'}</div>
+                <table class="doc-params-table"><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>${paramHtml}</tbody></table>` : ''}
+                <div class="doc-section-label" style="margin-top:${paramHtml ? '16px' : '0'}">Example Request</div>
+                <div class="doc-code">${escHtml(curlHtml)}</div>
+                <div class="doc-section-label" style="margin-top:16px">Response</div>
+                <div class="doc-code">${responseHtml}</div>
+            </div>
+        </div>`;
+    }
+
+    function listParamRows(fields) {
+        const sortableFields = fields.map(f => f.apiKey).join(', ');
+        return `
+            <tr><td><span class="doc-param-name">lang</span><span class="doc-optional-badge">optional</span></td>
+                <td><span class="doc-param-type">string</span></td>
+                <td class="doc-param-desc">Language code (e.g. <code>tr</code>, <code>en</code>). Defaults to tenant default.</td></tr>
+            <tr><td><span class="doc-param-name">page</span><span class="doc-optional-badge">optional</span></td>
+                <td><span class="doc-param-type">number</span></td>
+                <td class="doc-param-desc">Page number, starting from 1. Default: 1</td></tr>
+            <tr><td><span class="doc-param-name">pageSize</span><span class="doc-optional-badge">optional</span></td>
+                <td><span class="doc-param-type">number</span></td>
+                <td class="doc-param-desc">Items per page, max 100. Default: 20</td></tr>
+            <tr><td><span class="doc-param-name">sort</span><span class="doc-optional-badge">optional</span></td>
+                <td><span class="doc-param-type">string</span></td>
+                <td class="doc-param-desc">Sort expression: <code>field:asc</code> or <code>field:desc</code>. Sortable fields: ${escHtml(sortableFields) || 'id, created_at'}</td></tr>
+            <tr><td><span class="doc-param-name">filter[field]</span><span class="doc-optional-badge">optional</span></td>
+                <td><span class="doc-param-type">string</span></td>
+                <td class="doc-param-desc">Filter by field value. Replace <code>field</code> with a field key. Example: <code>filter[status]=published</code></td></tr>
+            <tr><td><span class="doc-param-name">fields</span><span class="doc-optional-badge">optional</span></td>
+                <td><span class="doc-param-type">string</span></td>
+                <td class="doc-param-desc">Comma-separated list of fields to include in response. Example: <code>fields=title,slug</code></td></tr>`;
+    }
+
+    function singleParamRows() {
+        return `
+            <tr><td><span class="doc-param-name">lang</span><span class="doc-optional-badge">optional</span></td>
+                <td><span class="doc-param-type">string</span></td>
+                <td class="doc-param-desc">Language code. Defaults to tenant default.</td></tr>`;
+    }
+
+    function writeBodyRows(fields) {
+        const rows = fields.map(f => `
+            <tr>
+                <td><span class="doc-param-name">fields.${escHtml(f.apiKey)}</span>
+                    ${f.isRequired ? '<span class="doc-required-badge">required</span>' : '<span class="doc-optional-badge">optional</span>'}
+                </td>
+                <td><span class="doc-param-type">${escHtml(f.jsonType)}</span></td>
+                <td class="doc-param-desc">${escHtml(f.name)}${f.isLocalized ? ' <em>(per language)</em>' : ''}</td>
+            </tr>`).join('');
+        return `
+            <tr><td><span class="doc-param-name">language</span><span class="doc-optional-badge">optional</span></td>
+                <td><span class="doc-param-type">string</span></td>
+                <td class="doc-param-desc">Language code for localized fields. Defaults to tenant default.</td></tr>
+            ${rows}`;
+    }
+
+    function curlExample(method, path, authHeader, body) {
+        const header = authHeader.startsWith('Authorization')
+            ? `-H "Authorization: Bearer {token}"`
+            : `-H "X-API-Key: {key}"`;
+        const base = `curl -X ${method} "https://your-domain.com${path}" \\\n  ${header}`;
+        if (body) return base + ` \\\n  -H "Content-Type: application/json" \\\n  -d '${body}'`;
+        return base;
+    }
+
+    function listResponseJson(fields) {
+        const fieldsObj = fields.slice(0, 6).map(f => {
+            return `    <span class="k">"${escHtml(f.apiKey)}"</span>: <span class="t">// ${escHtml(f.jsonType)}</span>`;
+        }).join(',\n');
+        return `{
+  <span class="k">"data"</span>: [
+    {
+      <span class="k">"id"</span>: <span class="n">1</span>,
+      <span class="k">"slug"</span>: <span class="s">"example-slug"</span>,
+      <span class="k">"fields"</span>: {
+${fieldsObj}
+      },
+      <span class="k">"meta"</span>: {
+        <span class="k">"createdAt"</span>: <span class="s">"2024-01-15T10:00:00Z"</span>,
+        <span class="k">"updatedAt"</span>: <span class="s">"2024-01-15T10:00:00Z"</span>,
+        <span class="k">"status"</span>: <span class="s">"published"</span>,
+        <span class="k">"language"</span>: <span class="s">"tr"</span>
+      }
+    }
+  ],
+  <span class="k">"pagination"</span>: {
+    <span class="k">"page"</span>: <span class="n">1</span>,
+    <span class="k">"pageSize"</span>: <span class="n">20</span>,
+    <span class="k">"total"</span>: <span class="n">142</span>,
+    <span class="k">"totalPages"</span>: <span class="n">8</span>
+  }
+}`;
+    }
+
+    function singleResponseJson(fields) {
+        const fieldsObj = fields.slice(0, 6).map(f => {
+            return `    <span class="k">"${escHtml(f.apiKey)}"</span>: <span class="t">// ${escHtml(f.jsonType)}</span>`;
+        }).join(',\n');
+        return `{
+  <span class="k">"data"</span>: {
+    <span class="k">"id"</span>: <span class="n">1</span>,
+    <span class="k">"slug"</span>: <span class="s">"example-slug"</span>,
+    <span class="k">"fields"</span>: {
+${fieldsObj}
+    },
+    <span class="k">"meta"</span>: {
+      <span class="k">"createdAt"</span>: <span class="s">"2024-01-15T10:00:00Z"</span>,
+      <span class="k">"updatedAt"</span>: <span class="s">"2024-01-15T10:00:00Z"</span>,
+      <span class="k">"status"</span>: <span class="s">"published"</span>,
+      <span class="k">"language"</span>: <span class="s">"tr"</span>
+    }
+  }
+}`;
+    }
+
+    function writeBodyJson(fields) {
+        const sample = fields.slice(0, 3).map(f => `"fields.${f.apiKey}": "..."`).join(', ');
+        return `{"language": "tr", ${sample}}`;
+    }
+
+    function writeResponseJson(fields) {
+        return singleResponseJson(fields);
+    }
+
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+</script>

@@ -1,0 +1,33 @@
+@model ContentItemFormViewModel
+@{
+    ViewData["Title"] = string.Format(L["ContentItem.EditFor"].Value, Model.ContentTypeName, Model.ItemId);
+}
+
+@section Breadcrumb {
+    <a asp-controller="ContentType" asp-action="Index">@L["ContentType.Breadcrumb"]</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i>
+    <a asp-action="Index" asp-route-contentTypeId="@Model.ContentTypeId">@Model.ContentTypeName</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i> @L["Common.Edit"] #@Model.ItemId
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <form method="post" asp-action="Edit" asp-route-contentTypeId="@Model.ContentTypeId" asp-route-id="@Model.ItemId">
+            @Html.AntiForgeryToken()
+            <div class="card cms-card">
+                <div class="card-body">
+                    <partial name="_ItemFormBody" model="Model" />
+                </div>
+            </div>
+            <div class="cms-form-footer">
+                <a class="btn btn-outline-secondary" asp-action="Index" asp-route-contentTypeId="@Model.ContentTypeId">@L["Common.Cancel"]</a>
+                <button type="submit" class="btn cms-btn-primary">@L["Common.SaveChanges"]</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/relation-picker.js" asp-append-version="true"></script>
+    <script src="~/js/media-picker.js" asp-append-version="true"></script>
+}

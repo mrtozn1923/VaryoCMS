@@ -1,0 +1,65 @@
+@model ContentTypeFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="cms-alert-danger mb-3"></div>
+
+<div class="cms-form-group">
+    <label asp-for="Name" class="cms-label">@L["Common.Name"]</label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="Slug" class="cms-label">@L["Common.Slug"]</label>
+    <input asp-for="Slug" class="form-control slug-field" placeholder="@L["ContentType.SlugPlaceholder"]" />
+    <div class="cms-hint">@L["ContentType.SlugHint"]</div>
+    <span asp-validation-for="Slug" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="Description" class="cms-label">@L["ContentType.Description"]</label>
+    <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+    <span asp-validation-for="Description" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="Icon" class="cms-label">@L["ContentType.Icon"]</label>
+    <div class="icon-picker" data-icon-picker data-placeholder="@L["ContentType.IconPlaceholder"]">
+        <input asp-for="Icon" type="hidden" class="ip-value" />
+        <div class="ip-control">
+            <button type="button" class="ip-trigger form-control">
+                <i class="bi bi-collection ip-trigger-icon"></i>
+                <span class="ip-trigger-label text-muted"></span>
+                <i class="bi bi-chevron-down ip-caret"></i>
+            </button>
+            <button type="button" class="ip-clear" aria-label="@L["Common.Clear"]" hidden>
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="ip-popover" hidden>
+            <input type="text" class="ip-search form-control" placeholder="@L["ContentType.IconSearch"]" autocomplete="off" />
+            <div class="ip-grid"></div>
+        </div>
+    </div>
+    <div class="cms-hint">@L["ContentType.IconHint"]</div>
+    <span asp-validation-for="Icon" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="ParentId" class="cms-label">Üst İçerik Tipi</label>
+    <select asp-for="ParentId" asp-items="Model.ParentOptions" class="form-select"></select>
+    <div class="cms-hint">Seçilirse bu içerik tipi sol menüde seçilenin altında görünür.</div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 cms-form-group">
+        <label asp-for="SortOrder" class="cms-label">@L["ContentType.Order"]</label>
+        <input asp-for="SortOrder" class="form-control" />
+        <span asp-validation-for="SortOrder" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6 cms-form-group d-flex align-items-end">
+        <div class="form-check form-switch">
+            <input asp-for="IsPublished" class="form-check-input" />
+            <label asp-for="IsPublished" class="form-check-label">@L["ContentType.IsPublished"]</label>
+        </div>
+    </div>
+</div>

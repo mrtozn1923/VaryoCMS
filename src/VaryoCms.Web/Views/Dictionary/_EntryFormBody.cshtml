@@ -1,0 +1,40 @@
+@model DictionaryEntryFormViewModel
+
+<div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+<div class="cms-form-group">
+    <label asp-for="KeyName" class="cms-label">@L["Dictionary.Key"]</label>
+    <input asp-for="KeyName" class="form-control slug-field" placeholder="nav.home" />
+    <span asp-validation-for="KeyName" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="Category" class="cms-label">@L["Dictionary.Category"]</label>
+    <input asp-for="Category" class="form-control" placeholder="navigation" />
+    <span asp-validation-for="Category" class="text-danger small"></span>
+</div>
+
+<hr class="cms-divider" />
+<h2 class="cms-section-title mb-3">@L["Dictionary.Translations"]</h2>
+
+@if (Model.Languages.Count == 0)
+{
+    <div class="cms-alert-warning"><i class="bi bi-exclamation-triangle-fill"></i><span>@L["Dictionary.NoLanguages"]</span></div>
+}
+else
+{
+    foreach (var lang in Model.Languages)
+    {
+        string? val = Model.Translations != null && Model.Translations.TryGetValue(lang.Code, out var v) ? v : null;
+        <div class="cms-form-group">
+            <label class="cms-label">
+                @lang.Name <span class="cms-mono text-muted">@lang.Code</span>
+                @if (lang.IsDefault)
+                {
+                    <span class="badge cms-badge-secondary">@L["Common.Default"]</span>
+                }
+            </label>
+            <textarea name="Translations[@lang.Code]" class="form-control" rows="2">@val</textarea>
+        </div>
+    }
+}

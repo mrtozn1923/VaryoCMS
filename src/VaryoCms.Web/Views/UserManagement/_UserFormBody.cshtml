@@ -1,0 +1,43 @@
+@model UserFormViewModel
+@{
+    // Roles assignable within a tenant (SystemAdmin is cross-tenant, managed separately).
+    var roles = new[] { UserRole.TenantAdmin, UserRole.Editor, UserRole.Viewer };
+    bool isEdit = Model.Id > 0;
+}
+
+<div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+<div class="cms-form-group">
+    <label asp-for="Email" class="cms-label">@L["Common.Email"]</label>
+    <input asp-for="Email" class="form-control" autocomplete="off" />
+    <span asp-validation-for="Email" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="FullName" class="cms-label">@L["Field.FullName"]</label>
+    <input asp-for="FullName" class="form-control" />
+    <span asp-validation-for="FullName" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="Role" class="cms-label">@L["Common.Role"]</label>
+    <select asp-for="Role" class="form-select">
+        @foreach (var r in roles)
+        {
+            <option value="@r" selected="@(Model.Role == r)">@r</option>
+        }
+    </select>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="Password" class="cms-label">
+        @(isEdit ? L["User.NewPasswordKeep"].Value : L["User.Password"].Value)
+    </label>
+    <input asp-for="Password" class="form-control" autocomplete="new-password" />
+    <span asp-validation-for="Password" class="text-danger small"></span>
+</div>
+
+<div class="form-check form-switch">
+    <input asp-for="IsActive" class="form-check-input" />
+    <label asp-for="IsActive" class="form-check-label">@L["Common.Active"]</label>
+</div>
