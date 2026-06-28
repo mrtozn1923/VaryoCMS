@@ -1,0 +1,95 @@
+@model FieldBuilderViewModel
+@{
+    ViewData["Title"] = string.Format(L["ContentField.TitleFor"].Value, Model.ContentTypeName);
+}
+
+@section Breadcrumb {
+    <a asp-controller="ContentType" asp-action="Index">@L["ContentType.Breadcrumb"]</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i> @L["ContentField.Title"]
+}
+
+@if (TempData["Error"] is string err)
+{
+    <div class="cms-alert-danger mb-3"><i class="bi bi-exclamation-triangle-fill"></i><span>@err</span></div>
+}
+
+@Html.AntiForgeryToken()
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        @if (Model.Fields.Count == 0)
+        {
+            <div class="cms-empty-state">
+                <i class="bi bi-input-cursor-text cms-empty-icon"></i>
+                <h5>@L["ContentField.Empty.Title"]</h5>
+                <p class="text-muted">@L["ContentField.Empty.Text"]</p>
+            </div>
+        }
+        else
+        {
+            <p class="cms-hint mb-2"><i class="bi bi-arrows-move me-1"></i>@L["ContentField.ReorderHint"]</p>
+            <ul id="field-list" class="cms-field-list" data-reorder-url="/admin/content-types/@Model.ContentTypeId/fields/reorder">
+                @foreach (var f in Model.Fields)
+                {
+                    <li class="cms-field-card" data-id="@f.Id">
+                        <span class="cms-drag-handle drag-handle"><i class="bi bi-grip-vertical"></i></span>
+                        <span class="cms-type-badge">@f.FieldType</span>
+                        <span class="cms-field-name">@f.Name</span>
+                        <span class="cms-field-slug">@f.Slug</span>
+                        @if (f.IsRequired)
+                        {
+                            <span class="badge cms-badge-warning">@L["ContentField.Required"]</span>
+                        }
+                        @if (f.IsLocalized)
+                        {
+                            <span class="badge cms-badge-info">@L["ContentField.Localized"]</span>
+                        }
+                        <span class="cms-row-actions ms-auto">
+                            <a class="cms-action-btn" title="@L["Common.Edit"]"
+                               asp-controller="ContentField" asp-action="Edit"
+                               asp-route-contentTypeId="@Model.ContentTypeId" asp-route-id="@f.Id">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" asp-controller="ContentField" asp-action="Delete"
+                                  asp-route-contentTypeId="@Model.ContentTypeId" asp-route-id="@f.Id"
+                                  onsubmit="return confirm('@L["ContentField.DeleteConfirm"]');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="cms-action-btn cms-action-danger" title="@L["Common.Delete"]">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card cms-card">
+            <div class="card-header cms-card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-plus-circle me-1"></i>@L["ContentField.Add"]</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-controller="ContentField" asp-action="Create" asp-route-contentTypeId="@Model.ContentTypeId">
+                    @Html.AntiForgeryToken()
+                    <partial name="_FieldFormFields" model="Model.NewField" />
+                    <div class="cms-form-footer">
+                        <button type="submit" class="btn cms-btn-primary">
+                            <i class="bi bi-plus-lg me-1"></i> @L["ContentField.Add"]
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_FieldOptionsModal" />
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="~/js/field-builder.js" asp-append-version="true"></script>
+    <script src="~/js/field-options.js" asp-append-version="true"></script>
+    <partial name="_ValidationScriptsPartial" />
+}

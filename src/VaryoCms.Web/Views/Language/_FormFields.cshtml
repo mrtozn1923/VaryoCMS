@@ -1,0 +1,42 @@
+@model LanguageFormViewModel
+
+<div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+<div class="cms-form-group">
+    <label asp-for="Code" class="cms-label">@L["Common.Code"]</label>
+    @if (Model.IsEdit)
+    {
+        <input class="form-control slug-field" value="@Model.Code.ToUpper()" readonly disabled />
+        <input type="hidden" asp-for="Code" />
+        <div class="cms-hint">@L["Language.CodeImmutableHint"]</div>
+    }
+    else
+    {
+        <input asp-for="Code" class="form-control slug-field" placeholder="@L["Language.CodePlaceholder"]" maxlength="5" />
+        <div class="cms-hint">@L["Language.CodeHint"]</div>
+        <span asp-validation-for="Code" class="text-danger small"></span>
+    }
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="Name" class="cms-label">@L["Common.Name"]</label>
+    <input asp-for="Name" class="form-control" placeholder="@L["Language.NamePlaceholder"]" />
+    <span asp-validation-for="Name" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="FlagIcon" class="cms-label">@L["Field.FlagIcon"]</label>
+    <input asp-for="FlagIcon" class="form-control slug-field" placeholder="@L["Language.FlagPlaceholder"]" />
+    <div class="cms-hint">@L["Language.FlagHint"]</div>
+</div>
+
+<div class="form-check form-switch mb-2">
+    <input asp-for="IsDefault" class="form-check-input" />
+    <label asp-for="IsDefault" class="form-check-label">@L["Field.IsDefaultLanguage"]</label>
+    <div class="cms-hint">@L["Language.DefaultHint"]</div>
+</div>
+
+<div class="form-check form-switch">
+    <input asp-for="IsActive" class="form-check-input" />
+    <label asp-for="IsActive" class="form-check-label">@L["Common.Active"]</label>
+</div>

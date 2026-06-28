@@ -1,0 +1,50 @@
+@model ContentFieldFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="cms-alert-danger mb-3"></div>
+
+<div class="cms-form-group">
+    <label asp-for="Name" class="cms-label">@L["Common.Name"]</label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="Slug" class="cms-label">@L["Common.Slug"]</label>
+    <input asp-for="Slug" class="form-control slug-field" placeholder="@L["ContentField.SlugPlaceholder"]" />
+    <span asp-validation-for="Slug" class="text-danger small"></span>
+</div>
+
+<div class="cms-form-group">
+    <label asp-for="FieldType" class="cms-label">@L["Field.Type"]</label>
+    <select asp-for="FieldType" class="form-select" asp-items="Html.GetEnumSelectList<FieldType>()"></select>
+    <span asp-validation-for="FieldType" class="text-danger small"></span>
+</div>
+
+<div class="row">
+    <div class="col-6">
+        <div class="form-check form-switch">
+            <input asp-for="IsRequired" class="form-check-input" />
+            <label asp-for="IsRequired" class="form-check-label">@L["Field.Required"]</label>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="form-check form-switch">
+            <input asp-for="IsLocalized" class="form-check-input" />
+            <label asp-for="IsLocalized" class="form-check-label">@L["Field.Localized"]</label>
+        </div>
+    </div>
+</div>
+
+<div class="cms-form-group mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <label asp-for="OptionsJson" class="cms-label mb-0">@L["Field.Options"]</label>
+        <button type="button" class="btn btn-outline-secondary btn-sm fo-open-btn">
+            <i class="bi bi-sliders me-1"></i>@L["Field.Customize"]
+        </button>
+    </div>
+    <div class="field-options-summary cms-hint mb-1"></div>
+    <textarea asp-for="OptionsJson" id="fo-raw-json" class="form-control cms-mono" rows="2"
+              placeholder="{}"></textarea>
+    <div class="cms-hint">@L["ContentField.OptionsHint"]</div>
+    <span asp-validation-for="OptionsJson" class="text-danger small"></span>
+</div>

@@ -1,0 +1,46 @@
+@model VerifyCodeViewModel
+@{
+    ViewData["Title"] = L["Login.VerifyCode.Title"].Value;
+    Layout = "_Layout";
+}
+
+<div class="cms-auth-shell">
+    <div class="cms-auth-card">
+        <div class="cms-auth-brand">
+            <div class="cms-brand-icon">✦</div>
+            <span>Varyo CMS</span>
+        </div>
+        <h1 class="cms-section-title mb-1">@L["Login.VerifyCode.Title"]</h1>
+        <p class="cms-hint mb-3">@string.Format(L["Login.VerifyCode.Description"].Value, Model.Email)</p>
+
+        <form method="post" asp-action="VerifyCode">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Email" />
+            <input type="hidden" asp-for="ReturnUrl" />
+            <input type="hidden" asp-for="RememberMe" />
+            <div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+            <div class="cms-form-group">
+                <label asp-for="Code" class="cms-label">@L["Login.VerifyCode.CodeLabel"]</label>
+                <input asp-for="Code" class="form-control cms-mono text-center"
+                       style="font-size:1.5rem;letter-spacing:0.5rem"
+                       maxlength="6" inputmode="numeric" pattern="\d{6}" autofocus
+                       autocomplete="one-time-code" />
+                <span asp-validation-for="Code" class="text-danger small"></span>
+                <div class="cms-hint mt-1">@L["Login.VerifyCode.ExpiryHint"]</div>
+            </div>
+
+            <button type="submit" class="btn cms-btn-primary w-100 mb-2">
+                <i class="bi bi-check-circle me-1"></i> @L["Login.VerifyCode.Submit"]
+            </button>
+        </form>
+
+        <a asp-action="Login" class="cms-hint d-block text-center mt-2">
+            <i class="bi bi-arrow-left me-1"></i> @L["Login.VerifyCode.BackToLogin"]
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

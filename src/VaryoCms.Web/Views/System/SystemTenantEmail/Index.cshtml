@@ -1,0 +1,119 @@
+@model TenantEmailSettingsViewModel
+@using VaryoCms.Web.ViewModels.System
+@{
+    ViewData["Title"] = "E-posta Doğrulama Ayarları";
+}
+
+@section Breadcrumb {
+    <a asp-controller="SystemTenants" asp-action="Index">Tenantlar</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i>
+    <span>@Model.TenantName</span>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i>
+    E-posta Ayarları
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        @if (TempData["Success"] is true)
+        {
+            <div class="cms-alert-success mb-3">Ayarlar kaydedildi.</div>
+        }
+
+        <div class="card cms-card">
+            <div class="card-header cms-card-header">
+                <i class="bi bi-envelope-check me-2"></i> E-posta Doğrulama — <strong>@Model.TenantName</strong>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+                    <div class="form-check form-switch mb-4">
+                        <input asp-for="EmailVerificationEnabled" class="form-check-input" />
+                        <label asp-for="EmailVerificationEnabled" class="form-check-label fw-semibold">
+                            Girişte e-posta kodu doğrulamasını etkinleştir
+                        </label>
+                    </div>
+
+                    <div id="smtp-fields">
+                        <h6 class="cms-section-title mb-3">SMTP Ayarları</h6>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-8">
+                                <label asp-for="SmtpHost" class="cms-label">SMTP Sunucu</label>
+                                <input asp-for="SmtpHost" class="form-control" placeholder="smtp.gmail.com" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="SmtpPort" class="cms-label">Port</label>
+                                <input asp-for="SmtpPort" type="number" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input asp-for="SmtpUseSsl" class="form-check-input" />
+                            <label asp-for="SmtpUseSsl" class="form-check-label">SSL/TLS kullan (port 465 için)</label>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="SmtpUser" class="cms-label">Kullanıcı Adı</label>
+                                <input asp-for="SmtpUser" class="form-control" autocomplete="off" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="SmtpPassword" class="cms-label">Parola</label>
+                                <input asp-for="SmtpPassword" type="password" class="form-control" autocomplete="new-password" />
+                                <div class="cms-hint">Boş bırakırsanız mevcut parola korunur.</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="FromAddress" class="cms-label">Gönderen E-posta</label>
+                                <input asp-for="FromAddress" type="email" class="form-control" placeholder="noreply@ornek.com" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="FromName" class="cms-label">Gönderen Ad</label>
+                                <input asp-for="FromName" class="form-control" />
+                            </div>
+                        </div>
+
+                        <h6 class="cms-section-title mb-3 mt-4">Kod Ayarları</h6>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="CodeExpiryMinutes" class="cms-label">Kod Geçerlilik Süresi (dakika)</label>
+                                <input asp-for="CodeExpiryMinutes" type="number" class="form-control" min="1" max="60" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="MaxAttempts" class="cms-label">Maksimum Deneme Sayısı</label>
+                                <input asp-for="MaxAttempts" type="number" class="form-control" min="1" max="10" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn cms-btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Kaydet
+                        </button>
+                        <a asp-controller="SystemTenants" asp-action="Index" class="btn cms-btn-secondary">
+                            Geri
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // SMTP alanlarını enabled toggle'a göre göster/gizle
+        const toggle = document.getElementById('@Html.IdFor(m => m.EmailVerificationEnabled)');
+        const smtpFields = document.getElementById('smtp-fields');
+        function sync() { smtpFields.style.opacity = toggle.checked ? '1' : '0.4'; }
+        toggle.addEventListener('change', sync);
+        sync();
+    </script>
+}

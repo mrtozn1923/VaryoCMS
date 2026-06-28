@@ -1,0 +1,90 @@
+@model UserListViewModel
+@{
+    ViewData["Title"] = L["User.Title"].Value;
+}
+
+@section PageActions {
+    <a class="btn cms-btn-primary" asp-action="Create">
+        <i class="bi bi-plus-lg me-1"></i> @L["User.New"]
+    </a>
+}
+
+@if (Model.Items.Count == 0)
+{
+    <div class="cms-empty-state">
+        <i class="bi bi-people cms-empty-icon"></i>
+        <h5>@L["User.EmptyTitle"]</h5>
+        <a class="btn cms-btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i> @L["User.New"]</a>
+    </div>
+}
+else
+{
+    <div class="cms-table-wrapper">
+        <div class="table-responsive">
+            <table class="table cms-table">
+                <thead>
+                    <tr>
+                        <th>@L["User.User"]</th>
+                        <th style="width:140px">@L["Common.Role"]</th>
+                        <th style="width:110px">@L["Common.Status"]</th>
+                        <th style="width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var u in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            <span class="cms-table-title">@(string.IsNullOrEmpty(u.FullName) ? u.Email : u.FullName)</span>
+                            <span class="cms-table-meta">@u.Email</span>
+                        </td>
+                        <td><span class="badge cms-badge-info">@u.Role</span></td>
+                        <td>
+                            @if (u.IsActive)
+                            {
+                                <span class="badge cms-badge-success">@L["Common.Active"]</span>
+                            }
+                            else
+                            {
+                                <span class="badge cms-badge-secondary">@L["Common.Inactive"]</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="cms-row-actions">
+                                <a class="cms-action-btn" title="@L["User.Permissions"]"
+                                   asp-controller="UserPermission" asp-action="Index" asp-route-userId="@u.Id">
+                                    <i class="bi bi-shield-check"></i>
+                                </a>
+                                <a class="cms-action-btn" title="@L["Common.Edit"]" asp-action="Edit" asp-route-id="@u.Id">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" asp-action="Delete" asp-route-id="@u.Id"
+                                      onsubmit="return confirm('@L["User.DeleteConfirm"]');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="cms-action-btn cms-action-danger" title="@L["Common.Delete"]">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@p">@p</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}

@@ -1,0 +1,50 @@
+@using VaryoCms.Application.DTOs.Audit
+@model IReadOnlyList<AuditLogDto>
+
+@functions {
+    static string AuditBadgeClass(string action) => action switch {
+        var a when a.StartsWith("Auth.")          => "cms-badge-info",
+        var a when a.StartsWith("ContentItem.")   => "cms-badge-success",
+        var a when a.StartsWith("ContentType.")   => "cms-badge-primary",
+        var a when a.StartsWith("ContentField.")  => "cms-badge-purple",
+        var a when a.StartsWith("Media.")         => "cms-badge-warning",
+        var a when a.StartsWith("User.")          => "cms-badge-secondary",
+        var a when a.StartsWith("Dictionary.")    => "cms-badge-secondary",
+        var a when a.StartsWith("Api.")           => "cms-badge-info",
+        var a when a.StartsWith("System.")        => "cms-badge-danger",
+        _                                         => "cms-badge-secondary"
+    };
+}
+
+@if (!Model.Any())
+{
+    <p class="cms-hint">@L["Dashboard.NoActivity"]</p>
+}
+else
+{
+    <ul class="list-unstyled mb-0">
+        @foreach (var entry in Model)
+        {
+            <li class="d-flex align-items-start gap-3 py-2 border-bottom">
+                <div class="flex-shrink-0 pt-1">
+                    <i class="bi bi-circle-fill" style="font-size:.45rem;color:var(--cms-primary)"></i>
+                </div>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex align-items-baseline gap-2 flex-wrap">
+                        <span class="fw-semibold text-truncate" style="max-width:180px;font-size:0.875rem">
+                            @(entry.EntityName ?? entry.EntityType ?? "—")
+                        </span>
+                        <span class="badge @AuditBadgeClass(entry.Action)" title="@entry.Action">
+                            @L["AuditAction." + entry.Action]
+                        </span>
+                    </div>
+                    <div class="cms-hint mt-1">
+                        @(entry.UserEmail ?? "—")
+                        <span class="mx-1">·</span>
+                        <time title="@entry.CreatedAt.ToString("o")">@entry.CreatedAt.ToLocalTime().ToString("dd MMM HH:mm")</time>
+                    </div>
+                </div>
+            </li>
+        }
+    </ul>
+}

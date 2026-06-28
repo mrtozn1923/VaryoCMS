@@ -1,0 +1,16 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = L["Error.Title"].Value;
+}
+
+<div class="cms-empty-state">
+    <i class="bi bi-exclamation-triangle cms-empty-icon text-danger"></i>
+    <h5>@L["Error.Heading"]</h5>
+    @if (Model.ShowRequestId)
+    {
+        <p class="cms-mono small text-muted">@L["Error.RequestId"]: @Model.RequestId</p>
+    }
+    <a class="btn cms-btn-primary" asp-controller="Home" asp-action="Index">
+        <i class="bi bi-house me-1"></i> @L["Common.BackToHome"]
+    </a>
+</div>

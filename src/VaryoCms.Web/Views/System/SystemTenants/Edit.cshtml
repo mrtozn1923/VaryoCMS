@@ -1,0 +1,45 @@
+@model TenantFormViewModel
+@{
+    ViewData["Title"] = L["Tenant.Edit"].Value;
+}
+
+@section Breadcrumb {
+    <a asp-action="Index">@L["Tenant.Tenants"]</a> <i class="bi bi-chevron-right" style="font-size:.65rem"></i> @L["Common.Edit"]
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card cms-card">
+            <div class="card-body">
+                <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="cms-alert-danger mb-3"></div>
+
+                    <div class="cms-form-group">
+                        <label asp-for="Name" class="cms-label">@L["Common.Name"]</label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                    <div class="cms-form-group">
+                        <label class="cms-label">@L["Common.Slug"]</label>
+                        <input class="form-control slug-field" value="@Model.Slug" readonly disabled />
+                        <div class="cms-hint">@L["Tenant.SlugImmutableHint"]</div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input asp-for="IsActive" class="form-check-input" />
+                        <label asp-for="IsActive" class="form-check-label">@L["Common.Active"]</label>
+                    </div>
+
+                    <div class="cms-form-footer">
+                        <a class="btn btn-outline-secondary" asp-action="Index">@L["Common.Cancel"]</a>
+                        <button type="submit" class="btn cms-btn-primary">@L["Common.Save"]</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

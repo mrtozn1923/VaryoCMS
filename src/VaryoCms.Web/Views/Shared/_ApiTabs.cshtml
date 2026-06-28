@@ -1,0 +1,18 @@
+@* Shared tab strip for API management screens. activeTab: "content-types" | "credentials" *@
+@{
+    string activeTab = (string)(ViewData["ApiActiveTab"] ?? "content-types");
+}
+<ul class="nav nav-tabs cms-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(activeTab == "content-types" ? "active" : string.Empty)"
+           asp-controller="ApiManagement" asp-action="Index">
+            <i class="bi bi-list-ul me-1"></i>@L["Api.ContentTypesTab"]
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(activeTab == "credentials" ? "active" : string.Empty)"
+           asp-controller="ApiCredential" asp-action="Index">
+            <i class="bi bi-key me-1"></i>@L["Api.CredentialsTab"]
+        </a>
+    </li>
+</ul>

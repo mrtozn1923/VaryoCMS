@@ -1,0 +1,87 @@
+@model IEnumerable<ContentTypeDto>
+@{
+    ViewData["Title"] = L["ContentType.Title"].Value;
+}
+
+@section PageActions {
+    <a class="btn cms-btn-primary" asp-controller="ContentType" asp-action="Create">
+        <i class="bi bi-plus-lg me-1"></i> @L["ContentType.New"]
+    </a>
+}
+
+@if (!Model.Any())
+{
+    <div class="cms-empty-state">
+        <i class="bi bi-grid-1x2 cms-empty-icon"></i>
+        <h5>@L["ContentType.Empty.Title"]</h5>
+        <p class="text-muted">@L["ContentType.Empty.Text"]</p>
+        <a class="btn cms-btn-primary" asp-controller="ContentType" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i> @L["ContentType.New"]
+        </a>
+    </div>
+}
+else
+{
+    <div class="cms-table-wrapper">
+        <div class="table-responsive">
+            <table class="table cms-table">
+                <thead>
+                    <tr>
+                        <th>@L["Common.Name"]</th>
+                        <th>@L["Common.Status"]</th>
+                        <th class="text-center" style="width:80px">@L["ContentType.Order"]</th>
+                        <th style="width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <span class="cms-table-title">
+                                <i class="bi @(string.IsNullOrWhiteSpace(item.Icon) ? "bi-collection" : item.Icon) me-1 text-muted"></i>
+                                @item.Name
+                            </span>
+                            <span class="cms-table-meta">@item.Slug</span>
+                        </td>
+                        <td>
+                            @if (item.IsPublished)
+                            {
+                                <span class="badge cms-badge-success">@L["Status.Published"]</span>
+                            }
+                            else
+                            {
+                                <span class="badge cms-badge-secondary">@L["Status.Draft"]</span>
+                            }
+                        </td>
+                        <td class="text-center">@item.SortOrder</td>
+                        <td>
+                            <div class="cms-row-actions">
+                                <a class="cms-action-btn" title="@L["ContentType.Items"]"
+                                   asp-controller="ContentItem" asp-action="Index" asp-route-contentTypeId="@item.Id">
+                                    <i class="bi bi-list-ul"></i>
+                                </a>
+                                <a class="cms-action-btn" title="@L["ContentType.Fields"]"
+                                   asp-controller="ContentField" asp-action="Index" asp-route-contentTypeId="@item.Id">
+                                    <i class="bi bi-input-cursor-text"></i>
+                                </a>
+                                <a class="cms-action-btn" title="@L["Common.Edit"]"
+                                   asp-controller="ContentType" asp-action="Edit" asp-route-id="@item.Id">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" asp-controller="ContentType" asp-action="Delete" asp-route-id="@item.Id"
+                                      onsubmit="return confirm('@L["ContentType.DeleteConfirm"]');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="cms-action-btn cms-action-danger" title="@L["Common.Delete"]">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

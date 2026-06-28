@@ -1,0 +1,73 @@
+@model ContentItemFormViewModel
+@{
+    var action = Model.ItemId == 0 ? "Create" : "Edit";
+    var languages = Model.AvailableLanguages.Count > 0
+        ? Model.AvailableLanguages.Select(l => (Code: l.Code, Name: l.Name)).ToList()
+        : new List<(string Code, string Name)> { (Model.LanguageCode, Model.LanguageCode.ToUpper()) };
+}
+
+@if (TempData["Error"] is string err)
+{
+    <div class="cms-alert-danger mb-3"><i class="bi bi-exclamation-triangle-fill"></i><span>@err</span></div>
+}
+
+<div class="cms-alert-info mb-3">
+    <i class="bi bi-info-circle-fill"></i>
+    <span>@L["ContentItem.PublishHint"]</span>
+</div>
+
+@* Language tabs + per-language activation toggle grouped together *@
+<div class="d-flex align-items-center gap-2 mb-1">
+    <span class="cms-label mb-0">@L["ContentItem.Language"]</span>
+    <div class="cms-tabs">
+        @foreach (var lng in languages)
+        {
+            <a class="cms-tab @(lng.Code == Model.LanguageCode ? "active" : "")" title="@lng.Name"
+               asp-action="@action" asp-route-contentTypeId="@Model.ContentTypeId"
+               asp-route-id="@(Model.ItemId == 0 ? (int?)null : Model.ItemId)" asp-route-lang="@lng.Code">@lng.Code.ToUpper()</a>
+        }
+    </div>
+    <div class="form-check mb-0 ms-2">
+        <input asp-for="IsLanguageActive" class="form-check-input" type="checkbox" />
+        <label asp-for="IsLanguageActive" class="form-check-label fw-medium">@L["ContentItem.LangActive"]</label>
+    </div>
+</div>
+<small class="d-block text-muted mb-3" style="font-size:.8em">@L["ContentItem.LangActive.Hint"]</small>
+
+<input type="hidden" asp-for="LanguageCode" />
+
+<div class="cms-form-group">
+    <label asp-for="Title" class="cms-label">@L["ContentItem.Title"] <span class="text-danger">*</span></label>
+    <input asp-for="Title" class="form-control title-source" autocomplete="off"
+           placeholder="@L["ContentItem.TitlePlaceholder"]" />
+</div>
+
+<div class="row">
+    <div class="col-md-6 cms-form-group">
+        <label asp-for="Status" class="cms-label">@L["Common.Status"]</label>
+        <select asp-for="Status" class="form-select">
+            <option value="draft">@L["Status.Draft"]</option>
+            <option value="published">@L["Status.Published"]</option>
+            <option value="archived">@L["Status.Archived"]</option>
+        </select>
+        <small class="cms-hint">@L["ContentItem.Status.Hint"]</small>
+    </div>
+    <div class="col-md-6 cms-form-group">
+        <label asp-for="Slug" class="cms-label">@L["Common.Slug"]</label>
+        <input asp-for="Slug" class="form-control slug-field" placeholder="@L["ContentItem.SlugPlaceholder"]" />
+    </div>
+</div>
+
+<hr class="cms-divider" />
+
+@if (Model.Fields.Count == 0)
+{
+    <div class="cms-alert-info"><i class="bi bi-info-circle-fill"></i><span>@L["ContentItem.NoFields"]</span></div>
+}
+else
+{
+    foreach (var field in Model.Fields)
+    {
+        <partial name="_FieldInput" model="field" />
+    }
+}

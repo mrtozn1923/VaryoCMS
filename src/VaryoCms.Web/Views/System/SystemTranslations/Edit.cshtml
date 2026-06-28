@@ -1,0 +1,36 @@
+@model TranslationEditViewModel
+@{
+    ViewData["Title"] = L["Translation.EditTitle"].Value;
+}
+
+@section Breadcrumb {
+    <a asp-action="Index">@L["Translation.Title"]</a>
+    <i class="bi bi-chevron-right" style="font-size:.65rem"></i> <span class="cms-mono">@Model.Key</span>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card cms-card">
+            <div class="card-body">
+                <form method="post" asp-action="Edit" asp-route-key="@Model.Key">
+                    @Html.AntiForgeryToken()
+                    <div class="cms-form-group">
+                        <label class="cms-label">@L["Translation.Key"]</label>
+                        <input class="form-control cms-mono" value="@Model.Key" readonly disabled />
+                    </div>
+                    @foreach (var c in Model.Cultures.Where(c => c.IsActive))
+                    {
+                        <div class="cms-form-group">
+                            <label class="cms-label">@c.Name <span class="cms-mono text-muted">@c.Code</span>@(c.IsDefault ? " ★" : "")</label>
+                            <textarea name="values[@c.Code]" class="form-control" rows="2">@(Model.Values.TryGetValue(c.Code, out var v) ? v : "")</textarea>
+                        </div>
+                    }
+                    <div class="cms-form-footer">
+                        <a class="btn btn-outline-secondary" asp-action="Index">@L["Common.Cancel"]</a>
+                        <button type="submit" class="btn cms-btn-primary">@L["Common.Save"]</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
