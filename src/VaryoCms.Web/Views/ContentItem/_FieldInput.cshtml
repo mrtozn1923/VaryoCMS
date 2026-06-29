@@ -135,17 +135,23 @@
         case FieldType.Audio:
         case FieldType.File:
         case FieldType.Gallery:
-            <div class="media-picker position-relative"
+            <div class="media-picker"
                  data-multiple="@(Model.MediaMultiple ? "true" : "false")"
                  data-media-type="@Model.MediaTypeFilter"
                  data-search-url="/admin/media/search"
                  data-max-size-mb="@(Model.MediaMaxSizeMb?.ToString() ?? null)"
                  data-allowed-formats="@(Model.MediaAllowedFormats.Count > 0 ? string.Join(",", Model.MediaAllowedFormats) : null)">
                 <input type="hidden" name="@name" class="mp-value" value="@val" />
-                <div class="mp-chips d-flex flex-wrap gap-2 mb-1">
+                <div class="mp-chips d-flex flex-wrap gap-2 mb-2">
                     @foreach (var m in Model.SelectedMedia)
                     {
-                        <span class="mp-chip p-1 d-inline-flex align-items-center" data-id="@m.Id">
+                        @* data-url / data-media-type / data-name allow JS to reconstruct media objects
+                           for Gallery re-commit without an extra fetch. *@
+                        <span class="mp-chip p-1 d-inline-flex align-items-center"
+                              data-id="@m.Id"
+                              data-url="@m.Url"
+                              data-media-type="@m.MediaType"
+                              data-name="@m.OriginalName">
                             @if (m.MediaType == "image")
                             {
                                 <img src="@m.Url" class="cms-mp-thumb me-1" alt="" />
@@ -155,9 +161,10 @@
                         </span>
                     }
                 </div>
-                <input type="text" class="form-control mp-search" placeholder="@L["ContentItem.MediaSearch"]" autocomplete="off" />
-                <div class="mp-results list-group position-absolute w-100" style="display:none;"></div>
-                <div class="cms-hint">@(Model.MediaMultiple ? L["ContentItem.MediaHintMultiple"] : L["ContentItem.MediaHintSingle"])</div>
+                <button type="button" class="btn cms-btn-secondary mp-open">
+                    <i class="bi bi-folder2-open me-1"></i>@L["ContentItem.MediaSelectButton"]
+                </button>
+                <div class="cms-hint mt-1">@(Model.MediaMultiple ? L["ContentItem.MediaHintMultiple"] : L["ContentItem.MediaHintSingle"])</div>
             </div>
             break;
 

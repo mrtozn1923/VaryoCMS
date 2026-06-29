@@ -1,0 +1,72 @@
+@* Shared media picker modal — rendered ONCE per page, outside the content <form>.
+   JS (media-picker.js) wires this to every .media-picker trigger button on the page. *@
+<div class="modal fade" id="mediaPickerModal" tabindex="-1" aria-labelledby="mpmModalLabel" aria-hidden="true"
+     data-msg-toolarge="@L["ContentItem.MediaTooLarge"]"
+     data-msg-format="@L["ContentItem.MediaFormatNotAllowed"]"
+     data-msg-uploadfail="@L["Err.UploadFailed"]"
+     data-msg-connection="@L["Err.ConnectionError"]">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="mpmModalLabel">
+                    <i class="bi bi-images me-2"></i>@L["ContentItem.MediaModalTitle"]
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@L["Common.Cancel"]"></button>
+            </div>
+
+            <div class="modal-body p-0">
+                <ul class="nav nav-tabs px-3 pt-2" id="mpmTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="mpm-tab-library" data-bs-toggle="tab"
+                                data-bs-target="#mpm-pane-library" type="button" role="tab">
+                            <i class="bi bi-folder2-open me-1"></i>@L["ContentItem.MediaTabLibrary"]
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="mpm-tab-upload" data-bs-toggle="tab"
+                                data-bs-target="#mpm-pane-upload" type="button" role="tab">
+                            <i class="bi bi-upload me-1"></i>@L["ContentItem.MediaTabUpload"]
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    @* ── Library tab ── *@
+                    <div class="tab-pane fade show active p-3" id="mpm-pane-library" role="tabpanel">
+                        <input type="text" id="mpm-search" class="form-control mb-3"
+                               placeholder="@L["ContentItem.MediaSearch"]" autocomplete="off" />
+                        <div id="mpm-grid" class="mpm-grid"></div>
+                        <p id="mpm-empty" class="text-muted text-center py-4" style="display:none;">
+                            <i class="bi bi-inbox me-1"></i>@L["ContentItem.MediaModalEmpty"]
+                        </p>
+                    </div>
+
+                    @* ── Upload tab ── *@
+                    <div class="tab-pane fade p-3" id="mpm-pane-upload" role="tabpanel">
+                        <div class="mb-3">
+                            <label for="mpm-file" class="cms-label">@L["Media.UploadFile"]</label>
+                            <input type="file" id="mpm-file" class="form-control"
+                                   accept="@MediaAllowedTypes.AcceptAttribute" />
+                            <div id="mpm-field-hint" class="cms-hint mt-1" style="display:none;"></div>
+                        </div>
+                        <button type="button" id="mpm-upload-btn" class="btn cms-btn-primary">
+                            <i class="bi bi-upload me-1"></i>@L["Media.Upload"]
+                        </button>
+                        <div id="mpm-status" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    @L["Common.Cancel"]
+                </button>
+                <button type="button" id="mpm-done" class="btn cms-btn-primary" style="display:none;">
+                    <i class="bi bi-check2 me-1"></i>@L["ContentItem.MediaModalDone"]
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

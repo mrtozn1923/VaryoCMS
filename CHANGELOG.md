@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-06-29
+
+### Added
+- **Modal-based media picker**: Replaced inline search-dropdown with a "Dosya Seç" trigger button that opens a shared Bootstrap modal per page. Modal has two tabs: **Kütüphane** (library search + thumbnail grid) and **Bilgisayardan Yükle** (local file upload). Gallery fields show a multi-select grid with "Seçilenleri ekle" commit button.
+- **In-form file upload**: Editors and admins can now upload media directly from a content edit form without leaving the page. Upload auto-selects the freshly uploaded asset.
+- **Editor upload permission**: `Editor` role can now upload to the tenant media library (previously TenantAdmin/SystemAdmin only).
+- **Per-field upload constraints**: `IMediaService.UploadAsync` accepts optional `maxSizeMb` and `allowedFormats` parameters; both client-side (JS validation) and server-side (service layer) enforcement. Global 50 MB + MIME allow-list remains the authoritative upper bound.
+- 9 new UI translation keys (`ContentItem.MediaSelectButton`, `MediaModalTitle`, `MediaTabLibrary`, `MediaTabUpload`, `MediaModalDone`, `MediaModalEmpty`, `MediaTooLarge`, `MediaFormatNotAllowed`) in `002_v1_dev_seed.sql` (tr + en).
+
+---
+
 ## [1.0.0] - 2026-06-27
 
 ### Added — Core Platform
