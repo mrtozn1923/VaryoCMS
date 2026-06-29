@@ -6,7 +6,9 @@ namespace VaryoCms.Application.Interfaces;
 public interface IMediaService
 {
     Task<Result<MediaAssetDto>> UploadAsync(
-        Stream content, string originalFileName, string? contentType, long sizeBytes, CancellationToken ct = default);
+        Stream content, string originalFileName, string? contentType, long sizeBytes,
+        int? maxSizeMb = null, IReadOnlyList<string>? allowedFormats = null,
+        CancellationToken ct = default);
     Task<Result<PagedResult<MediaAssetDto>>> GetListAsync(
         string? mediaType, int page, int pageSize, CancellationToken ct = default);
     Task<Result<MediaAssetDto>> GetByIdAsync(int id, CancellationToken ct = default);

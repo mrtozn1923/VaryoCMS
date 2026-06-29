@@ -8,7 +8,7 @@ using Microsoft.Extensions.Localization;
 namespace VaryoCms.Web.Controllers.Admin;
 
 // Media library management is restricted to TenantAdmin and SystemAdmin.
-// The search endpoint is also accessible by Editors so the media picker works in content forms.
+// Search and Upload endpoints are also accessible by Editors so the media picker works in content forms.
 [Authorize(Roles = "TenantAdmin,SystemAdmin")]
 [Route("admin/media")]
 public class MediaController : Controller
@@ -41,13 +41,18 @@ public class MediaController : Controller
         => Json(await _media.SearchAsync(q, type, 20, ct));
 
     [HttpPost("upload")]
+    [Authorize(Roles = "TenantAdmin,SystemAdmin,Editor")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Upload(IFormFile? file, CancellationToken ct)
+    public async Task<IActionResult> Upload(IFormFile? file, int? maxSizeMb, string? allowedFormats, CancellationToken ct)
     {
         if (file is null || file.Length == 0) return BadRequest("No file uploaded.");
 
+        var formats = string.IsNullOrWhiteSpace(allowedFormats)
+            ? null
+            : (IReadOnlyList<string>)allowedFormats.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
         await using var stream = file.OpenReadStream();
-        var result = await _media.UploadAsync(stream, file.FileName, file.ContentType, file.Length, ct);
+        var result = await _media.UploadAsync(stream, file.FileName, file.ContentType, file.Length, maxSizeMb, formats, ct);
         return result.IsSuccess ? Json(result.Value) : BadRequest(result.Error);
     }
 

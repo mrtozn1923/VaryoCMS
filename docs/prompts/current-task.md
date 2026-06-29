@@ -1,9 +1,19 @@
 # Current Task
 
-## Status: ✅ v1.0.0 — Temiz başlangıç noktası hazır
+## Status: ✅ v1.1.0 — Modal medya seçici tamamlandı
 
-**Tarih:** 2026-06-28  
-**Branch:** main (squash commit, `v1.0.0` tag'li)
+**Tarih:** 2026-06-29  
+**Branch:** main (`v1.1.0` tag'li)
+
+---
+
+## v1.1.0 Kapsamı (Tamamlandı)
+
+- **Modal medya seçici** — "Dosya Seç" butonu → Bootstrap modal (Kütüphane + Bilgisayardan Yükle sekmeleri)
+- **Form içi upload** — Editor ve adminler content formundan ayrılmadan medya yükleyebilir
+- **Editor upload yetkisi** — Upload endpoint'e Editor rolü eklendi
+- **Alan-bazlı limit (istemci + sunucu)** — `UploadAsync` `maxSizeMb` + `allowedFormats` parametreleri
+- 9 yeni UI çeviri anahtarı (tr + en)
 
 ---
 
@@ -41,10 +51,6 @@ Varyo CMS v1.0.0 tüm çekirdek özellikleri içeriyor:
 ## Sonraki Adımlar (Öneri)
 
 - [ ] CI/CD pipeline (GitHub Actions: build + test + Docker push)
-- [ ] Otomatik migration runner (startup veya script)
-- [ ] SystemAdmin hesap yönetimi ekranı (şu an sadece dev seed + şifre değiştir)
-- [ ] Entegrasyon testleri (DatabaseFixture + MigrationRunner)
-- [ ] S3/blob storage (LocalFileStorageService → S3FileStorageService; interface hazır)
 - [ ] Webhook desteği (içerik publish/delete olayları)
 - [ ] Çoklu domain desteği (şu an subdomain only)
 

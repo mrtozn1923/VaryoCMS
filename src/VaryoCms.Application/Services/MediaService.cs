@@ -33,7 +33,9 @@ public class MediaService : IMediaService
     }
 
     public async Task<Result<MediaAssetDto>> UploadAsync(
-        Stream content, string originalFileName, string? contentType, long sizeBytes, CancellationToken ct = default)
+        Stream content, string originalFileName, string? contentType, long sizeBytes,
+        int? maxSizeMb = null, IReadOnlyList<string>? allowedFormats = null,
+        CancellationToken ct = default)
     {
         if (sizeBytes <= 0)
             return Result<MediaAssetDto>.Failure(_t["Err.EmptyFile"]);
@@ -43,6 +45,16 @@ public class MediaService : IMediaService
             return Result<MediaAssetDto>.Failure(_t["Err.MissingFileName"]);
         if (!MediaAllowedTypes.IsAllowed(contentType))
             return Result<MediaAssetDto>.Failure(_t["Err.FileTypeNotAllowed"]);
+
+        // Per-field constraints (narrower than the global limits above).
+        if (maxSizeMb is > 0 && sizeBytes > (long)maxSizeMb * 1024 * 1024)
+            return Result<MediaAssetDto>.Failure(_t["Err.FileExceedsLimit", maxSizeMb]);
+        if (allowedFormats is { Count: > 0 })
+        {
+            var ext = Path.GetExtension(originalFileName).TrimStart('.').ToLowerInvariant();
+            if (!allowedFormats.Any(f => f.TrimStart('.').Equals(ext, StringComparison.OrdinalIgnoreCase)))
+                return Result<MediaAssetDto>.Failure(_t["Err.FileTypeNotAllowed"]);
+        }
 
         string mediaType = ResolveMediaType(contentType);
 
