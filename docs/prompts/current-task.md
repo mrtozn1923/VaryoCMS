@@ -1,9 +1,29 @@
 # Current Task
 
-## Status: ✅ v1.1.0 — Modal medya seçici tamamlandı
+## Status: ✅ v1.1.0 + Mert Özen seed hazır
 
 **Tarih:** 2026-06-29  
 **Branch:** main (`v1.1.0` tag'li)
+
+---
+
+## 🔄 Aktif: MertOzenWeb — Frontend MVC Projesi
+
+**Durum:** CMS seed tamamlandı, MVC frontend projesi henüz oluşturulmadı.
+
+**Brief dosyası:** `~/Desktop/MertOzenWebsite-ProjectBrief.md`  
+**Tenant slug:** `mert-ozen` (DevTenantSlug güncellendi)  
+**CMS API:** `http://localhost:5267/api/v1/mert-ozen/{category|post|video|about}`
+
+**Seed içeriği (003_mert_ozen_seed.sql):**
+- 4 content type: `category`, `post`, `video`, `about`
+- 8 kategori: Backend, Frontend, DevOps, Veritabanı, YZ, Mobil, Güvenlik, Sistem
+- 9 blog yazısı (4 öne çıkan, seri etiketleri dahil)
+- 8 video
+- 1 hakkımda kaydı
+- Tüm API yapılandırmaları açık (is_public=1, allow_read=1, auth_type=None)
+
+**Sıradaki adım:** Yeni terminal aç → `~/Desktop/MertOzenWebsite-ProjectBrief.md` dosyasını Claude'a ver → sıfırdan ASP.NET Core 8 MVC projesi oluştur.
 
 ---
 
