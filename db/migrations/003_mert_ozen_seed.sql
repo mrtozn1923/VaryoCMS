@@ -169,11 +169,11 @@ DECLARE
   @FAbExp INT, @FAbEdu INT, @FAbSK INT, @FAbBk INT, @FAbMv INT, @FAbAct INT,
   @FVLName INT, @FVLDesc INT, @FVLSort INT,
   @FExpCo INT, @FExpRole INT, @FExpStart INT, @FExpEnd INT, @FExpDesc INT, @FExpSort INT,
-  @FEduInst INT, @FEduDegree INT, @FEduField INT, @FEduStartY INT, @FEduEndY INT, @FEduSort INT,
+  @FEduInst INT, @FEduDegree INT, @FEduField INT, @FEduStartY INT, @FEduEndY INT, @FEduSort INT, @FEduDesc INT,
   @FSKName INT, @FSKItems INT, @FSKSort INT,
-  @FBkTitle INT, @FBkAuthor INT, @FBkYear INT, @FBkStatus INT, @FBkProgress INT, @FBkSort INT,
-  @FMvTitle INT, @FMvCreator INT, @FMvYear INT, @FMvType INT, @FMvNote INT,
-  @FActName INT, @FActIcon INT, @FActDesc INT;
+  @FBkTitle INT, @FBkAuthor INT, @FBkYear INT, @FBkStatus INT, @FBkProgress INT, @FBkSort INT, @FBkNote INT,
+  @FMvTitle INT, @FMvCreator INT, @FMvYear INT, @FMvType INT, @FMvNote INT, @FMvSort INT,
+  @FActName INT, @FActIcon INT, @FActDesc INT, @FActSort INT;
 
 -- ── site-settings fields ────────────────────────────────────────
 INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
@@ -442,6 +442,10 @@ INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, 
 VALUES (@TId, @CtEdu, N'Sıra', N'sort-order', N'Number', 0, 0, 5, NULL, GETUTCDATE(), GETUTCDATE(), 0);
 SET @FEduSort = SCOPE_IDENTITY();
 
+INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
+VALUES (@TId, @CtEdu, N'Açıklama', N'description', N'Text', 0, 1, 6, N'{"max_length":500}', GETUTCDATE(), GETUTCDATE(), 0);
+SET @FEduDesc = SCOPE_IDENTITY();
+
 -- ── skill-group fields ───────────────────────────────────────────
 INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
 VALUES (@TId, @CtSK, N'Grup Adı', N'name', N'Text', 1, 1, 0, NULL, GETUTCDATE(), GETUTCDATE(), 0);
@@ -480,6 +484,10 @@ INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, 
 VALUES (@TId, @CtBk, N'Sıra', N'sort-order', N'Number', 0, 0, 5, NULL, GETUTCDATE(), GETUTCDATE(), 0);
 SET @FBkSort = SCOPE_IDENTITY();
 
+INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
+VALUES (@TId, @CtBk, N'Not', N'note', N'Text', 0, 1, 6, N'{"max_length":500}', GETUTCDATE(), GETUTCDATE(), 0);
+SET @FBkNote = SCOPE_IDENTITY();
+
 -- ── movie fields ─────────────────────────────────────────────────
 INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
 VALUES (@TId, @CtMv, N'Başlık', N'title', N'Text', 1, 0, 0, NULL, GETUTCDATE(), GETUTCDATE(), 0);
@@ -490,7 +498,7 @@ VALUES (@TId, @CtMv, N'Yapımcı / Yönetmen', N'creator', N'Text', 0, 0, 1, NUL
 SET @FMvCreator = SCOPE_IDENTITY();
 
 INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
-VALUES (@TId, @CtMv, N'Yıl', N'year', N'Number', 0, 0, 2, NULL, GETUTCDATE(), GETUTCDATE(), 0);
+VALUES (@TId, @CtMv, N'Yıl', N'year-label', N'Text', 0, 0, 2, N'{"max_length":20}', GETUTCDATE(), GETUTCDATE(), 0);
 SET @FMvYear = SCOPE_IDENTITY();
 
 INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
@@ -500,6 +508,10 @@ SET @FMvType = SCOPE_IDENTITY();
 INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
 VALUES (@TId, @CtMv, N'Not', N'note', N'Text', 0, 1, 4, N'{"max_length":500}', GETUTCDATE(), GETUTCDATE(), 0);
 SET @FMvNote = SCOPE_IDENTITY();
+
+INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
+VALUES (@TId, @CtMv, N'Sıra', N'sort-order', N'Number', 0, 0, 5, NULL, GETUTCDATE(), GETUTCDATE(), 0);
+SET @FMvSort = SCOPE_IDENTITY();
 
 -- ── activity fields ──────────────────────────────────────────────
 INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
@@ -513,6 +525,10 @@ SET @FActIcon = SCOPE_IDENTITY();
 INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
 VALUES (@TId, @CtAct, N'Açıklama', N'description', N'Text', 0, 1, 2, N'{"max_length":300}', GETUTCDATE(), GETUTCDATE(), 0);
 SET @FActDesc = SCOPE_IDENTITY();
+
+INSERT INTO content_fields (tenant_id, content_type_id, name, slug, field_type, is_required, is_localized, sort_order, options_json, created_at, updated_at, is_deleted)
+VALUES (@TId, @CtAct, N'Sıra', N'sort-order', N'Number', 0, 0, 3, NULL, GETUTCDATE(), GETUTCDATE(), 0);
+SET @FActSort = SCOPE_IDENTITY();
 
 -- ================================================================
 -- ADIM 7: API Credential
@@ -1395,7 +1411,7 @@ WHERE ac.tenant_id = @TId;
   INSERT INTO content_field_values (tenant_id, content_item_id, content_field_id, language_code, value_text, value_number, value_bool, value_date, created_at, updated_at) VALUES
     (@TId, @Mv1, @FMvTitle,   N'all', N'Inception',                                                        NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv1, @FMvCreator, N'all', N'Christopher Nolan',                                                NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Mv1, @FMvYear,    N'all', NULL,                                                                2010, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Mv1, @FMvYear,    N'all', N'2010',                                                             NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv1, @FMvType,    N'all', N'film',                                                             NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv1, @FMvNote,    N'tr',  N'Düşlerin katmanları arasında kaybolan bir zihinsel yolculuk.',     NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv1, @FMvNote,    N'en',  N'A mental journey lost in layers of dreams.',                       NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
@@ -1407,7 +1423,7 @@ WHERE ac.tenant_id = @TId;
   INSERT INTO content_field_values (tenant_id, content_item_id, content_field_id, language_code, value_text, value_number, value_bool, value_date, created_at, updated_at) VALUES
     (@TId, @Mv2, @FMvTitle,   N'all', N'The Matrix',                                                       NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv2, @FMvCreator, N'all', N'Wachowski Kardeşler',                                              NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Mv2, @FMvYear,    N'all', NULL,                                                               1999, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Mv2, @FMvYear,    N'all', N'1999',                                                             NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv2, @FMvType,    N'all', N'film',                                                             NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv2, @FMvNote,    N'tr',  N'Gerçeklik algısını sorgulatan efsanevi bilim kurgu.',              NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv2, @FMvNote,    N'en',  N'Legendary sci-fi that questions the perception of reality.',       NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
@@ -1419,7 +1435,7 @@ WHERE ac.tenant_id = @TId;
   INSERT INTO content_field_values (tenant_id, content_item_id, content_field_id, language_code, value_text, value_number, value_bool, value_date, created_at, updated_at) VALUES
     (@TId, @Mv3, @FMvTitle,   N'all', N'Breaking Bad',                                                                                  NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv3, @FMvCreator, N'all', N'Vince Gilligan',                                                                                NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Mv3, @FMvYear,    N'all', NULL,                                                                                            2008, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Mv3, @FMvYear,    N'all', N'2008–2013',                                                                                     NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv3, @FMvType,    N'all', N'dizi',                                                                                          NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv3, @FMvNote,    N'tr',  N'Bir kimya öğretmeninin dönüşüm hikayesi. TV tarihinin en iyi yazımı.',                          NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv3, @FMvNote,    N'en',  N'The transformation story of a chemistry teacher. The best writing in TV history.',               NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
@@ -1431,7 +1447,7 @@ WHERE ac.tenant_id = @TId;
   INSERT INTO content_field_values (tenant_id, content_item_id, content_field_id, language_code, value_text, value_number, value_bool, value_date, created_at, updated_at) VALUES
     (@TId, @Mv4, @FMvTitle,   N'all', N'Interstellar',                                                                          NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv4, @FMvCreator, N'all', N'Christopher Nolan',                                                                     NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Mv4, @FMvYear,    N'all', NULL,                                                                                    2014, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Mv4, @FMvYear,    N'all', N'2014',                                                                                   NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv4, @FMvType,    N'all', N'film',                                                                                  NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv4, @FMvNote,    N'tr',  N'Zaman ve uzay boyutlarında insanlığın geleceği arayışı.',                               NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv4, @FMvNote,    N'en',  N'The search for humanity''s future across time and space dimensions.',                    NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
@@ -1443,7 +1459,7 @@ WHERE ac.tenant_id = @TId;
   INSERT INTO content_field_values (tenant_id, content_item_id, content_field_id, language_code, value_text, value_number, value_bool, value_date, created_at, updated_at) VALUES
     (@TId, @Mv5, @FMvTitle,   N'all', N'Black Mirror',                                                                          NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv5, @FMvCreator, N'all', N'Charlie Brooker',                                                                       NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Mv5, @FMvYear,    N'all', NULL,                                                                                    2011, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Mv5, @FMvYear,    N'all', N'2011–',                                                                                  NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv5, @FMvType,    N'all', N'dizi',                                                                                  NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv5, @FMvNote,    N'tr',  N'Teknolojinin karanlık yüzüne ayna tutan distopik hikayeler.',                           NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Mv5, @FMvNote,    N'en',  N'Dystopian stories that mirror the dark side of technology.',                            NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
@@ -1461,7 +1477,8 @@ WHERE ac.tenant_id = @TId;
     (@TId, @Act1, @FActName, N'en',  N'Photography',                                                                  NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Act1, @FActIcon, N'all', N'bi-camera',                                                                    NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Act1, @FActDesc, N'tr',  N'Şehir ve doğa fotoğrafçılığı ile anları ölümsüzleştiriyorum.',                NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Act1, @FActDesc, N'en',  N'I immortalize moments through urban and nature photography.',                   NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
+    (@TId, @Act1, @FActDesc, N'en',  N'I immortalize moments through urban and nature photography.',                   NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Act1, @FActSort, N'all', NULL,                                                                             1,    NULL, NULL, GETUTCDATE(), GETUTCDATE());
 
   -- Act2: dag-yuruyusu
   INSERT INTO content_items (tenant_id, content_type_id, slug, status, created_by, updated_by, published_at, created_at, updated_at, is_deleted)
@@ -1472,7 +1489,8 @@ WHERE ac.tenant_id = @TId;
     (@TId, @Act2, @FActName, N'en',  N'Hiking',                                                                       NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Act2, @FActIcon, N'all', N'bi-geo-alt',                                                                   NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Act2, @FActDesc, N'tr',  N'Hafta sonları doğa yürüyüşleriyle zihin temizliyorum.',                        NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Act2, @FActDesc, N'en',  N'I clear my mind with nature hikes on weekends.',                               NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
+    (@TId, @Act2, @FActDesc, N'en',  N'I clear my mind with nature hikes on weekends.',                               NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Act2, @FActSort, N'all', NULL,                                                                             2,    NULL, NULL, GETUTCDATE(), GETUTCDATE());
 
   -- Act3: satranc
   INSERT INTO content_items (tenant_id, content_type_id, slug, status, created_by, updated_by, published_at, created_at, updated_at, is_deleted)
@@ -1483,7 +1501,8 @@ WHERE ac.tenant_id = @TId;
     (@TId, @Act3, @FActName, N'en',  N'Chess',                                                                         NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Act3, @FActIcon, N'all', N'bi-grid-3x3',                                                                  NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Act3, @FActDesc, N'tr',  N'Stratejik düşünme ve problem çözme için satranç.',                             NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Act3, @FActDesc, N'en',  N'Chess for strategic thinking and problem solving.',                             NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
+    (@TId, @Act3, @FActDesc, N'en',  N'Chess for strategic thinking and problem solving.',                             NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Act3, @FActSort, N'all', NULL,                                                                             3,    NULL, NULL, GETUTCDATE(), GETUTCDATE());
 
   -- Act4: podcast
   INSERT INTO content_items (tenant_id, content_type_id, slug, status, created_by, updated_by, published_at, created_at, updated_at, is_deleted)
@@ -1494,7 +1513,8 @@ WHERE ac.tenant_id = @TId;
     (@TId, @Act4, @FActName, N'en',  N'Podcast Listening',                                                                            NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Act4, @FActIcon, N'all', N'bi-headphones',                                                                               NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
     (@TId, @Act4, @FActDesc, N'tr',  N'Teknoloji ve yazılım konularında güncel kalmak için podcast takibi.',                          NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
-    (@TId, @Act4, @FActDesc, N'en',  N'Following podcasts to stay current on technology and software topics.',                        NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE());
+    (@TId, @Act4, @FActDesc, N'en',  N'Following podcasts to stay current on technology and software topics.',                        NULL, NULL, NULL, GETUTCDATE(), GETUTCDATE()),
+    (@TId, @Act4, @FActSort, N'all', NULL,                                                                                            4,    NULL, NULL, GETUTCDATE(), GETUTCDATE());
 
 -- ============================================================
 -- ADIM 23: Hakkımda (singleton)
