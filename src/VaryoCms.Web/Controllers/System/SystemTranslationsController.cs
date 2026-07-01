@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using VaryoCms.Application.Interfaces;
 using VaryoCms.Application.Localization;
 using VaryoCms.Domain.Enums;
@@ -64,7 +65,8 @@ public class SystemTranslationsController : Controller
     public async Task<IActionResult> Export(string culture, CancellationToken ct)
     {
         var json = await _translations.ExportAsync(culture, ct);
-        return File(Encoding.UTF8.GetBytes(json), "application/json", $"ui-translations-{culture}.json");
+        string safeCulture = Regex.Replace(culture ?? "", @"[^a-zA-Z0-9\-]", "");
+        return File(Encoding.UTF8.GetBytes(json), "application/json", $"ui-translations-{safeCulture}.json");
     }
 
     [HttpPost("import")]

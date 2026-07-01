@@ -17,11 +17,14 @@
             {
                 var isCurrent = string.Equals(l.Code, Model.CurrentCode, StringComparison.OrdinalIgnoreCase);
                 <li>
-                    <a class="dropdown-item @(isCurrent ? "active" : "")"
-                       asp-controller="LanguagePreference" asp-action="Set"
-                       asp-route-code="@l.Code" asp-route-returnUrl="@Model.ReturnUrl">
-                        <span class="cms-mono me-1">@l.Code.ToUpper()</span> @l.Name
-                    </a>
+                    <form method="post" asp-controller="LanguagePreference" asp-action="Set" style="margin:0">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="code" value="@l.Code" />
+                        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                        <button type="submit" class="dropdown-item @(isCurrent ? "active" : "")">
+                            <span class="cms-mono me-1">@l.Code.ToUpper()</span> @l.Name
+                        </button>
+                    </form>
                 </li>
             }
         </ul>

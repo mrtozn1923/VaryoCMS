@@ -20,10 +20,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Copy migration scripts to output so MigrationRunner can find them at runtime -->
-    <Content Include="..\..\db\migrations\*.sql">
+    <!-- Copy schema+base migrations to output. Dev-user-specific seeds (003+) are excluded —
+         they wipe dev-tenant; integration tests rely on the dev-tenant created by 002. -->
+    <Content Include="..\..\db\migrations\001_v1_schema.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>migrations\%(Filename)%(Extension)</Link>
+      <Link>migrations\001_v1_schema.sql</Link>
+    </Content>
+    <Content Include="..\..\db\migrations\002_v1_dev_seed.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>migrations\002_v1_dev_seed.sql</Link>
     </Content>
   </ItemGroup>
 

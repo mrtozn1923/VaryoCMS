@@ -18,6 +18,7 @@ out/
 # Local config & secrets
 .claude/settings.local.json
 appsettings.*.local.json
+appsettings.Production.json
 *.env
 .env
 

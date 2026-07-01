@@ -113,6 +113,16 @@ app.Use(async (context, next) =>
     context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
     context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
     context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    // TinyMCE (RichText editor) and Monaco (CodeSnippet/JSON) require unsafe-inline.
+    // cdn.jsdelivr.net serves TinyMCE; cdnjs.cloudflare.com serves Monaco.
+    context.Response.Headers.Append("Content-Security-Policy",
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com; " +
+        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net rsms.me fonts.googleapis.com; " +
+        "font-src 'self' cdn.jsdelivr.net rsms.me fonts.gstatic.com; " +
+        "img-src 'self' data: blob:; " +
+        "connect-src 'self'; " +
+        "frame-ancestors 'none'");
     await next();
 });
 

@@ -1,29 +1,37 @@
 # Current Task
 
-## Status: ✅ v1.1.0 + Mert Özen seed hazır
+## Status: ✅ v1.1.0 + Mert Özen seed v3 + güvenlik fixleri hazır
 
-**Tarih:** 2026-06-29  
+**Tarih:** 2026-07-01  
 **Branch:** main (`v1.1.0` tag'li)
 
 ---
 
 ## 🔄 Aktif: MertOzenWeb — Frontend MVC Projesi
 
-**Durum:** CMS seed tamamlandı, MVC frontend projesi henüz oluşturulmadı.
+**Durum:** CMS seed v3 tamamlandı (13 content type), MVC frontend projesi henüz oluşturulmadı.
 
 **Brief dosyası:** `~/Desktop/MertOzenWebsite-ProjectBrief.md`  
 **Tenant slug:** `mert-ozen` (DevTenantSlug güncellendi)  
-**CMS API:** `http://localhost:5267/api/v1/mert-ozen/{category|post|video|about}`
+**CMS API:** `http://localhost:5267/api/v1/mert-ozen/{slug}`  
+**API Key:** `vk_1_M3rtOzen_SecretKey2026!` (X-API-Key header; auth_type=ApiKey, is_public=0)
 
-**Seed içeriği (003_mert_ozen_seed.sql):**
-- 4 content type: `category`, `post`, `video`, `about`
-- 8 kategori: Backend, Frontend, DevOps, Veritabanı, YZ, Mobil, Güvenlik, Sistem
-- 9 blog yazısı (4 öne çıkan, seri etiketleri dahil)
-- 8 video
-- 1 hakkımda kaydı
+**Seed içeriği (003_mert_ozen_seed.sql — v3):**
+- 13 content type: `site-settings`, `category`, `series`, `post`, `video`, `about`, `video-list`, `experience`, `education`, `skill-group`, `book`, `movie`, `activity`
+- Sosyal linkler `site-settings` singleton'da (linkedin, github, youtube, instagram, email)
+- `series` content type (Microservices 101, PostgreSQL Derinlemesine)
+- 8 kategori: Backend, Frontend, DevOps, Veritabanı, Yapay Zeka, Mobil, Güvenlik, Sistem
+- 14 blog yazısı (4 öne çıkan, series Relation ile bağlı P1/P5/P6/P8/P9)
+- 8 video (`youtubeId` alanı, viewCount YOK; 4 video-list'e bağlı Relation)
+- 4 video listesi: Backend & Mimari, DevOps & Altyapı, Veri & Yapay Zeka, Frontend & İstemci
+- 3 deneyim, 2 eğitim, 5 yetkinlik grubu, 7 kitap, 5 film & dizi, 4 aktivite
+- 1 hakkımda kaydı (6 MultiRelation: experiences, educations, skillGroups, books, moviesSeries, activities)
+- Tüm API yapılandırmaları: auth_type=ApiKey, is_public=0, allow_read=1
 - Tüm API yapılandırmaları açık (is_public=1, allow_read=1, auth_type=None)
 
-**Sıradaki adım:** Yeni terminal aç → `~/Desktop/MertOzenWebsite-ProjectBrief.md` dosyasını Claude'a ver → sıfırdan ASP.NET Core 8 MVC projesi oluştur.
+**Sosyal linkler:** `site-settings` API'sinden çekilir (site-settings→linkedinUrl, githubUrl, youtubeUrl, instagramUrl, contactEmail)
+
+**Sıradaki adım:** `~/Desktop/MertOzenWebsite-ProjectBrief.md` brief dosyasını güncellenmiş haliyle Claude'a ver → sıfırdan ASP.NET Core 8 MVC projesi oluştur.
 
 ---
 

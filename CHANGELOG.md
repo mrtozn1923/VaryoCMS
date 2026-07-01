@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-07-01
+
+### Added
+- **RichText WYSIWYG editor (TinyMCE)**: RichText fields now use TinyMCE v7 (CDN, oxide-dark skin) instead of a plain textarea. Markdown fields remain as plain textarea. New `richtext-editor.js` initialises all `.cms-richtext` textareas on the page.
+- **Content-Security-Policy header**: CSP added to the security headers middleware. Allows `unsafe-inline` for TinyMCE/Monaco; `frame-ancestors 'none'` blocks clickjacking.
+
+### Fixed
+- **CSRF on language switcher**: `LanguagePreferenceController.Set()` changed from `GET` to `POST + [ValidateAntiForgeryToken]`; view updated to render a `<form>` instead of an anchor link.
+- **XSS in JS string context** (`Views/Media/Index.cshtml`): `@Html.Raw(L["..."].Value)` replaced with `@Json.Serialize(L["..."].Value)` in inline script blocks.
+- **Filename injection** (`SystemTranslationsController.Export`): `culture` parameter sanitized with `Regex.Replace` before use in the `Content-Disposition` filename.
+- **EAV tenant isolation** (`PublicApiRepository`): Filter and sort subqueries over `content_field_values` now include `fv.tenant_id = ci.tenant_id` guard.
+- **`[AllowAnonymous]` on error page** (`HomeController.Error`): Error action was behind the global `[Authorize]` filter, causing authenticated-only error pages in production.
+- **`TrustServerCertificate=False`** in `appsettings.Production.json`: Was incorrectly `True`.
+- **JWT `SigningKey` placeholder**: Production config now uses `SET_VIA_ENV_Jwt__SigningKey` to signal the env-var pattern instead of a literal placeholder.
+- **Test isolation**: Integration and UI test projects now copy only `001_v1_schema.sql` + `002_v1_dev_seed.sql`; the `003_mert_ozen_seed.sql` dev reset seed is excluded so `dev-tenant` exists for all test fixtures.
+
+### Changed
+- `AllowedHosts` restricted from `"*"` to `"localhost;127.0.0.1;[::1]"` in `appsettings.json` (development); override for production domains via environment variable.
+- `appsettings.Production.json` added to `.gitignore` — no longer tracked after this release.
+
+### Chore
+- `003_mert_ozen_seed.sql` (dev-only): 13 content types (`site-settings`, `category`, `series`, `post`, `video`, `about`, `video-list`, `experience`, `education`, `skill-group`, `book`, `movie`, `activity`), ApiKey auth, 14 posts, 8 videos, series Relation, `youtubeId` field, `site-settings` singleton for social links.
+
+---
+
 ## [1.1.0] - 2026-06-29
 
 ### Added

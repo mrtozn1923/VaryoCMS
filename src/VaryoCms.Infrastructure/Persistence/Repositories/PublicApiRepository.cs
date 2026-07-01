@@ -82,7 +82,8 @@ public class PublicApiRepository : BaseRepository, IPublicApiRepository
             args.Add($"FVal{i}", f.Value);
             whereBuilder.Append(
                 $" AND EXISTS (SELECT 1 FROM content_field_values fv{i} " +
-                $"WHERE fv{i}.content_item_id = ci.id AND fv{i}.content_field_id = {f.FieldId} " +
+                $"WHERE fv{i}.content_item_id = ci.id AND fv{i}.tenant_id = ci.tenant_id " +
+                $"AND fv{i}.content_field_id = {f.FieldId} " +
                 $"AND fv{i}.language_code IN (@Lang, 'all') AND fv{i}.{f.Column} = @FVal{i})");
         }
         string where = whereBuilder.ToString();
@@ -95,7 +96,8 @@ public class PublicApiRepository : BaseRepository, IPublicApiRepository
             // Sort by an EAV field value via a correlated subquery (prefers the requested language).
             orderBy =
                 $"(SELECT TOP 1 sv.{sortCol} FROM content_field_values sv " +
-                $"WHERE sv.content_item_id = ci.id AND sv.content_field_id = {sortFieldId} " +
+                $"WHERE sv.content_item_id = ci.id AND sv.tenant_id = ci.tenant_id " +
+                $"AND sv.content_field_id = {sortFieldId} " +
                 $"AND sv.language_code IN (@Lang, 'all') " +
                 $"ORDER BY CASE WHEN sv.language_code = @Lang THEN 0 ELSE 1 END) {dir}, ci.id {dir}";
         }
