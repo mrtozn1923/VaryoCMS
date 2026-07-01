@@ -248,13 +248,13 @@ else
                 if (resp.ok && data && data.id) {
                     window.location.reload();
                 } else {
-                    var fallback = '@Html.Raw(L["Err.UploadFailed"].Value)';
+                    var fallback = @Json.Serialize(L["Err.UploadFailed"].Value);
                     var msg = typeof data === 'string' ? data : fallback;
                     showUploadError(status, msg);
                     btn.disabled = false; btn.innerHTML = originalHtml;
                 }
             } catch (_) {
-                showUploadError(status, '@Html.Raw(L["Err.ConnectionError"].Value)');
+                showUploadError(status, @Json.Serialize(L["Err.ConnectionError"].Value));
                 btn.disabled = false; btn.innerHTML = originalHtml;
             }
         });

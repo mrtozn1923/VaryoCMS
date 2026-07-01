@@ -75,6 +75,9 @@
             break;
 
         case FieldType.RichText:
+            <textarea class="form-control cms-richtext" id="@id" name="@name" rows="10" required="@req">@val</textarea>
+            break;
+
         case FieldType.Markdown:
             <textarea class="form-control cms-mono" id="@id" name="@name" rows="4" required="@req"
                       placeholder="@Model.Placeholder">@val</textarea>

@@ -16,7 +16,8 @@ public class LanguagePreferenceController : Controller
 
     public LanguagePreferenceController(IUiTranslationStore uiCultures) => _uiCultures = uiCultures;
 
-    [HttpGet("")]
+    [HttpPost("")]
+    [ValidateAntiForgeryToken]
     public IActionResult Set(string code, string? returnUrl)
     {
         // Only honour a code that is an active UI culture (global ui_cultures).
