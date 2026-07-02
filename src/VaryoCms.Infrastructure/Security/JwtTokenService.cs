@@ -52,6 +52,9 @@ public class JwtTokenService : IJwtTokenService
             ValidIssuer = _issuer,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = _key,
+            // Pin the accepted signing algorithm — tokens are always HS256 (symmetric). Prevents
+            // algorithm-confusion attacks (e.g. a forged "alg":"none" or an RS/HS swap) as defense-in-depth.
+            ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
             ValidateAudience = false,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(1)
@@ -83,6 +86,9 @@ public class JwtTokenService : IJwtTokenService
             ValidIssuer = _issuer,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = _key,
+            // Pin the accepted signing algorithm — tokens are always HS256 (symmetric). Prevents
+            // algorithm-confusion attacks (e.g. a forged "alg":"none" or an RS/HS swap) as defense-in-depth.
+            ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
             ValidateAudience = false,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(1)

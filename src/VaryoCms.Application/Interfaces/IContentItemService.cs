@@ -12,7 +12,7 @@ public interface IContentItemService
     Task<Result<ContentItemEditDto>> GetForEditAsync(int itemId, string languageCode, CancellationToken ct = default);
     Task<Result<int>> CreateAsync(SaveContentItemRequest request, CancellationToken ct = default);
     Task<Result> UpdateAsync(int itemId, SaveContentItemRequest request, CancellationToken ct = default);
-    Task<Result> DeleteAsync(int itemId, CancellationToken ct = default);
+    Task<Result> DeleteAsync(int contentTypeId, int itemId, CancellationToken ct = default);
 
     // Searches a target content type's published items for the relation picker.
     Task<Result<IReadOnlyList<RelatedItemDto>>> SearchRelatedAsync(

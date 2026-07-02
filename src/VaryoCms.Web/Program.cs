@@ -44,15 +44,21 @@ builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 // In-memory cache backs the public API rate limiter.
 builder.Services.AddMemoryCache();
 
-// Fixed-window rate limiter for login endpoints: 10 attempts per 5 minutes per client IP.
+// Fixed-window rate limiter for login endpoints: 10 attempts per 5 minutes, PARTITIONED PER CLIENT IP.
+// A single shared limiter would let one attacker's attempts lock out every legitimate user (DoS) and
+// wouldn't isolate brute-force per source — so we key the partition on the remote IP.
 builder.Services.AddRateLimiter(opts =>
 {
-    opts.AddFixedWindowLimiter("login", o =>
+    opts.AddPolicy("login", httpContext =>
     {
-        o.PermitLimit = 10;
-        o.Window = TimeSpan.FromMinutes(5);
-        o.QueueLimit = 0;
-        o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        string partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(5),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        });
     });
     opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
@@ -69,6 +75,10 @@ builder.Services
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        // Dev runs on plain HTTP (localhost:5267) — Always would drop the cookie there.
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
     });
 
 // Application services + validators, then data access. Registered at the composition root.
@@ -127,7 +137,23 @@ app.Use(async (context, next) =>
 });
 
 if (!app.Environment.IsEnvironment("Testing")) app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Static assets. User-uploaded media lives under wwwroot/uploads and is served by this same
+// middleware. Defense-in-depth: even though the storage layer only ever writes a server-controlled
+// extension from a raster/doc allow-map (no SVG/HTML/JS), lock down responses for /uploads so a
+// stray active-content file can never execute in the app origin — a sandbox CSP neutralises inline
+// scripts and nosniff blocks MIME sniffing.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        if (ctx.Context.Request.Path.StartsWithSegments("/uploads"))
+        {
+            ctx.Context.Response.Headers["Content-Security-Policy"] = "sandbox; default-src 'none'";
+            ctx.Context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        }
+    }
+});
 
 app.UseRouting();
 
@@ -142,6 +168,11 @@ app.UseAuthentication();
 
 // After authentication: a SystemAdmin impersonating a tenant overrides the resolved tenant/language context.
 app.UseMiddleware<ImpersonationMiddleware>();
+
+// Bind the authenticated (non-SystemAdmin) session to the resolved tenant: reject if the cookie's
+// tenant claim doesn't match the request's tenant. Must run after impersonation (which sets the
+// context) and before authorization.
+app.UseMiddleware<TenantAccessGuardMiddleware>();
 
 app.UseAuthorization();
 

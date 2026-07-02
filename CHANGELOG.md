@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-07-02
+
+### Security
+Full audit pass (SQL injection, tenant isolation, CSRF, XSS, authz/IDOR, upload, auth, API credentials) across the whole solution. SQLi and tenant-isolation were clean; the findings below were fixed.
+
+- **Arbitrary file extension on upload → stored XSS (Critical)**: `LocalFileStorageService` no longer falls back to the user-supplied filename extension. The stored extension is now always resolved from the validated MIME type via a single allow-map (`MediaAllowedTypes.TryGetExtension`); an allowed-but-unmapped MIME is rejected instead of stored as an attacker-chosen `.html`/`.js`. The MIME allow-list and the MIME→extension map are now the same map (previously the list was a superset, which enabled the bypass).
+- **SVG stored XSS (High)**: `image/svg+xml` removed from the media allow-list (script-capable, served inline). As defense-in-depth, `/uploads` is now served with `Content-Security-Policy: sandbox; default-src 'none'` + `X-Content-Type-Options: nosniff`, so any stray active-content file cannot execute in the app origin.
+- **Public API DELETE cross-content-type IDOR (High)**: `PublicApiWriteRepository.SoftDeleteItemAsync` now filters `content_type_id` in addition to `tenant_id`. A credential granted delete on content type A can no longer delete items of content type B in the same tenant (Update/Create were already content-type-scoped).
+- **Admin content-item cross-content-type IDOR (High)**: `ContentItemService.UpdateAsync`/`DeleteAsync` and the edit-form factory now verify the item belongs to the route content type the caller was permission-checked against. Previously an Editor with rights on one content type could edit/delete items of any content type in the tenant by crafting the item id.
+- **Login rate limiter now per-IP (Medium)**: the `"login"` limiter is partitioned by `RemoteIpAddress` (was a single global bucket that let one attacker lock out all users). 10 attempts / 5 min per IP.
+- **Session bound to resolved tenant (Medium)**: new `TenantAccessGuardMiddleware` rejects (403) an authenticated non-SystemAdmin request whose cookie `TenantId` claim doesn't match the subdomain-resolved tenant — closes a cross-tenant gap should a cookie ever reach another tenant's host.
+- **Auth cookie `Secure` flag (Medium)**: `Cookie.SecurePolicy = Always` in non-Development (Dev stays `SameAsRequest` for plain-HTTP localhost).
+- **JWT lifetime reduced 365 → 90 days (Medium)**: stateless JWTs can't be individually revoked, so the shorter lifetime bounds a leaked token's window. ApiKey credentials remain the revocable option (checked against `is_active`/`is_deleted` per request).
+- **JWT algorithm pinning (Low)**: `TokenValidationParameters.ValidAlgorithms = ["HS256"]` on both validation paths — defense-in-depth against algorithm-confusion.
+- **User-permission content-type validation (Low)**: `UserService.SavePermissionsAsync` drops permission rows referencing content types that don't belong to the tenant instead of persisting orphan grants.
+
+### Chore
+- `003_dev_tenant_seed.sql` (dev-only): the 14 blog posts' `body` fields were expanded from single-paragraph stubs into full multi-section articles (H2/H3 headings, code blocks, lists) in both `tr` and `en`, so the frontend table-of-contents (derived from `<h2>`/`<h3>`) renders meaningfully.
+
+---
+
 ## [1.2.0] - 2026-07-01
 
 ### Added

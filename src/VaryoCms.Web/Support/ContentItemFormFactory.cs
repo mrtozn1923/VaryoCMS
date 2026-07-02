@@ -77,6 +77,10 @@ public class ContentItemFormFactory
         {
             var edit = await _items.GetForEditAsync(id, languageCode, ct);
             if (!edit.IsSuccess) return null;
+            // Guard: the item must belong to the content type this form was opened for (route
+            // contentTypeId, already permission-checked). Prevents reading another type's item values
+            // by crafting /admin/content-types/{A}/items/{B_item_id}/edit.
+            if (edit.Value!.ContentTypeId != contentTypeId) return null;
             vm.ItemId = edit.Value!.Id;
             vm.Status = edit.Value.Status;
             vm.Slug = edit.Value.Slug;

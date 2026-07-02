@@ -171,6 +171,12 @@ public class ContentItemService : IContentItemService
         var item = await _items.GetByIdAsync(itemId, ct);
         if (item is null) return Result.Failure(_t["Err.ContentItemNotFound"]);
 
+        // Guard: the item must belong to the content type the caller was authorized against
+        // (RequireContentTypePermission checks the route contentTypeId). Without this, an Editor with
+        // Update on type A could edit any item of type B in the same tenant by posting B's item id.
+        if (item.ContentTypeId != request.ContentTypeId)
+            return Result.Failure(_t["Err.ContentItemNotFound"]);
+
         var fields = await _fields.GetByContentTypeAsync(item.ContentTypeId, ct);
         var missing = FirstMissingRequired(fields, request);
         if (missing is not null) return Result.Failure(_t["Err.FieldRequired", missing]);
@@ -204,9 +210,14 @@ public class ContentItemService : IContentItemService
         return Result<IReadOnlyList<RelatedItemDto>>.Success(dtos);
     }
 
-    public async Task<Result> DeleteAsync(int itemId, CancellationToken ct = default)
+    public async Task<Result> DeleteAsync(int contentTypeId, int itemId, CancellationToken ct = default)
     {
         var item = await _items.GetByIdAsync(itemId, ct);
+        // Guard: only delete the item if it belongs to the content type the caller was authorized
+        // against — otherwise Delete on any one type would let an Editor wipe the whole tenant's items.
+        if (item is null || item.ContentTypeId != contentTypeId)
+            return Result.Failure(_t["Err.ContentItemNotFound"]);
+
         bool deleted = await _items.SoftDeleteAsync(itemId, ct);
         if (!deleted) return Result.Failure(_t["Err.ContentItemNotFound"]);
         await _audit.LogAsync(AuditActions.ContentItemDeleted, "ContentItem", itemId,

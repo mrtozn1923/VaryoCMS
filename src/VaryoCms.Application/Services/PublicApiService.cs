@@ -591,7 +591,7 @@ public class PublicApiService : IPublicApiService
         if (ctx.Error is not null) return Result.Failure(ctx.Error);
         var (tenant, config, _, credentialIdentity) = (ctx.Tenant!, ctx.Config!, ctx.Error, ctx.CredentialIdentity);
 
-        bool deleted = await _writeRepo.SoftDeleteItemAsync(tenant.Id, id, ct);
+        bool deleted = await _writeRepo.SoftDeleteItemAsync(tenant.Id, config.ContentTypeId, id, ct);
         if (!deleted) return Result.Failure("NotFound");
 
         InvalidateCache(tenant.Id, config.ContentTypeId);

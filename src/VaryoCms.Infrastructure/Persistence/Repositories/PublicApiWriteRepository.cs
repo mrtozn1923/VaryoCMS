@@ -75,14 +75,16 @@ public class PublicApiWriteRepository : BaseRepository, IPublicApiWriteRepositor
         return await conn.ExecuteAsync(command) > 0;
     }
 
-    public async Task<bool> SoftDeleteItemAsync(int tenantId, int itemId, CancellationToken ct = default)
+    public async Task<bool> SoftDeleteItemAsync(int tenantId, int contentTypeId, int itemId, CancellationToken ct = default)
     {
         using var conn = CreateConnection();
+        // content_type_id guard prevents a credential granted delete on content type A from deleting
+        // an item of content type B in the same tenant (cross-content-type IDOR).
         var command = new CommandDefinition(
             @"UPDATE content_items
               SET is_deleted = 1, updated_at = GETUTCDATE()
-              WHERE id = @Id AND tenant_id = @TenantId AND is_deleted = 0",
-            new { Id = itemId, TenantId = tenantId },
+              WHERE id = @Id AND content_type_id = @ContentTypeId AND tenant_id = @TenantId AND is_deleted = 0",
+            new { Id = itemId, ContentTypeId = contentTypeId, TenantId = tenantId },
             cancellationToken: ct);
         return await conn.ExecuteAsync(command) > 0;
     }

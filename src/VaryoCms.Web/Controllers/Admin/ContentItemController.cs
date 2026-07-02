@@ -117,7 +117,7 @@ public class ContentItemController : Controller
     [RequireContentTypePermission(ContentPermission.Delete)]
     public async Task<IActionResult> Delete(int contentTypeId, int id, CancellationToken ct)
     {
-        await _items.DeleteAsync(id, ct);
+        await _items.DeleteAsync(contentTypeId, id, ct);
         return RedirectToAction(nameof(Index), new { contentTypeId });
     }
 

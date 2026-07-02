@@ -26,7 +26,7 @@ public interface IPublicApiWriteRepository
         int tenantId, int itemId, string? slug, string status, CancellationToken ct = default);
 
     // Soft-deletes a content item. Returns false when the item is not found.
-    Task<bool> SoftDeleteItemAsync(int tenantId, int itemId, CancellationToken ct = default);
+    Task<bool> SoftDeleteItemAsync(int tenantId, int contentTypeId, int itemId, CancellationToken ct = default);
 
     // Fetches a single published item for the given tenant+content-type (for update validation).
     Task<ContentItem?> GetItemByIdAsync(int tenantId, int contentTypeId, int itemId, CancellationToken ct = default);

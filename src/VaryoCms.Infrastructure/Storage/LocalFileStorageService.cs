@@ -10,24 +10,6 @@ public class LocalFileStorageService : IFileStorageService
     private readonly string _requestPath;   // e.g. "/uploads"
     private readonly string _uploadRoot;    // canonical path for path-traversal guard
 
-    // Server-controlled extension derived from the validated MIME type (not user filename).
-    private static readonly Dictionary<string, string> MimeExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["image/jpeg"]        = ".jpg",  ["image/png"]        = ".png",
-        ["image/webp"]        = ".webp", ["image/gif"]        = ".gif",
-        ["image/svg+xml"]     = ".svg",
-        ["video/mp4"]         = ".mp4",  ["video/webm"]       = ".webm",
-        ["video/quicktime"]   = ".mov",
-        ["audio/mpeg"]        = ".mp3",  ["audio/ogg"]        = ".ogg",
-        ["audio/wav"]         = ".wav",  ["audio/webm"]       = ".weba",
-        ["application/pdf"]   = ".pdf",
-        ["application/msword"]= ".doc",
-        ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"] = ".docx",
-        ["application/vnd.ms-excel"] = ".xls",
-        ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"] = ".xlsx",
-        ["text/plain"]        = ".txt",
-    };
-
     public LocalFileStorageService(string webRootPath, string requestPath = "/uploads")
     {
         _webRootPath = webRootPath;
@@ -47,10 +29,14 @@ public class LocalFileStorageService : IFileStorageService
         string tenantFolder = Path.Combine(_webRootPath, folderName, tenantId.ToString());
         Directory.CreateDirectory(tenantFolder);
 
-        // Extension: MIME-derived (server-controlled) → sanitized original fallback.
-        string extension = mimeType is not null && MimeExtensions.TryGetValue(mimeType, out string? mapped)
-            ? mapped
-            : SanitizeExtension(Path.GetExtension(originalFileName));
+        // Extension is ALWAYS server-controlled: resolved from the validated MIME type via the
+        // single allow-map. We never fall back to the user-supplied filename extension — that
+        // fallback previously let an allowed MIME (e.g. image/jpg) be stored as an attacker-chosen
+        // .html/.svg and served inline (stored XSS). An unmapped MIME here means MediaService let
+        // through something the map doesn't cover, which is a bug: reject loudly.
+        if (!MediaAllowedTypes.TryGetExtension(mimeType, out string extension))
+            throw new InvalidOperationException(
+                $"Unsupported or unvalidated media MIME type: '{mimeType ?? "(null)"}'. Upload rejected.");
 
         string fileName = $"{Guid.NewGuid():N}{extension}";
         string fullPath = Path.Combine(tenantFolder, fileName);
@@ -87,15 +73,5 @@ public class LocalFileStorageService : IFileStorageService
         string fullPath = Path.GetFullPath(Path.Combine(_webRootPath, trimmed));
         return fullPath.StartsWith(_uploadRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
             ? fullPath : null;
-    }
-
-    // Allows only ASCII alphanumeric extensions to block executable-looking names (.php, .aspx, …).
-    private static string SanitizeExtension(string rawExt)
-    {
-        if (string.IsNullOrWhiteSpace(rawExt)) return string.Empty;
-        string clean = rawExt.TrimStart('.');
-        return clean.All(char.IsAsciiLetterOrDigit) && clean.Length is > 0 and <= 8
-            ? $".{clean.ToLowerInvariant()}"
-            : string.Empty;
     }
 }

@@ -126,7 +126,9 @@ src/
     ├── Views/
     ├── Middleware/
     │   ├── TenantResolutionMiddleware.cs
-    │   └── LanguageResolutionMiddleware.cs
+    │   ├── LanguageResolutionMiddleware.cs
+    │   ├── ImpersonationMiddleware.cs        ← SystemAdmin tenant impersonation (overrides context)
+    │   └── TenantAccessGuardMiddleware.cs    ← binds non-SystemAdmin session to resolved tenant (403 on mismatch)
     ├── Contexts/
     │   ├── ITenantContext.cs + TenantContext.cs
     │   └── ILanguageContext.cs + LanguageContext.cs

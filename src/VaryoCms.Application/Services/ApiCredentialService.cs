@@ -12,7 +12,10 @@ namespace VaryoCms.Application.Services;
 
 public class ApiCredentialService : IApiCredentialService
 {
-    private const int JwtLifetimeDays = 365;
+    // JWTs are stateless (no per-token DB record), so an issued token can't be individually revoked
+    // before it expires — only the shorter lifetime bounds a leaked token's window. Reduced from 365d.
+    // For hard revocation, prefer the ApiKey credential type (checked against is_active/is_deleted per request).
+    private const int JwtLifetimeDays = 90;
 
     private readonly IApiCredentialRepository _credRepo;
     private readonly IContentTypeRepository _contentTypes;

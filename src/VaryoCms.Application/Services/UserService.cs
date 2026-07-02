@@ -176,9 +176,14 @@ public class UserService : IUserService
         var user = await _users.GetByIdAsync(userId, ct);
         if (user is null) return Result.Failure(_t["Err.UserNotFound"]);
 
-        // Only persist rows that grant at least one permission.
+        // Only accept content types that actually belong to this tenant — GetAllAsync is tenant-scoped,
+        // so a forged/foreign ContentTypeId is silently dropped rather than persisted as an orphan grant.
+        var validContentTypeIds = (await _contentTypes.GetAllAsync(ct)).Select(t => t.Id).ToHashSet();
+
+        // Only persist rows that grant at least one permission and reference a real tenant content type.
         IReadOnlyList<UserContentTypePermission> toSave = request.Permissions
-            .Where(p => p.CanRead || p.CanCreate || p.CanUpdate || p.CanDelete)
+            .Where(p => (p.CanRead || p.CanCreate || p.CanUpdate || p.CanDelete)
+                        && validContentTypeIds.Contains(p.ContentTypeId))
             .Select(p => new UserContentTypePermission
             {
                 UserId = userId,
