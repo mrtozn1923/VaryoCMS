@@ -6,10 +6,28 @@
 GET    /api/v1/{tenantSlug}/{contentTypeSlug}
 GET    /api/v1/{tenantSlug}/{contentTypeSlug}/{id}
 GET    /api/v1/{tenantSlug}/{contentTypeSlug}/slug/{slug}
-POST   /api/v1/{tenantSlug}/{contentTypeSlug}        — requires allow_create = 1
-PUT    /api/v1/{tenantSlug}/{contentTypeSlug}/{id}   — requires allow_update = 1
-DELETE /api/v1/{tenantSlug}/{contentTypeSlug}/{id}   — requires allow_delete = 1
+POST   /api/v1/{tenantSlug}/{contentTypeSlug}                 — requires allow_create = 1
+PUT    /api/v1/{tenantSlug}/{contentTypeSlug}/{id}            — requires allow_update = 1
+DELETE /api/v1/{tenantSlug}/{contentTypeSlug}/{id}            — requires allow_delete = 1
+POST   /api/v1/{tenantSlug}/{contentTypeSlug}/{id}/increment-view  — requires allow_read = 1
 ```
+
+### `increment-view` (view counter)
+
+`POST …/{id}/increment-view` atomically does `value_number = value_number + 1` on the item's
+`view-count` Number field in a single statement (no read-modify-write race). Returns `204 No Content`.
+
+- **Auth:** bound to **read** permission (a benign analytics side-effect of reading a post), so a
+  credential that can read the content type can bump the counter — no separate write flag or
+  `allow_update` needed. A valid credential is still required (401 without one).
+- **Not audited** (high-frequency) and **does not invalidate the response cache**, so the returned
+  view count may lag by up to the config's `cache_seconds` (acceptable for a counter).
+- The item must have a field with slug `view-count`; otherwise `404`.
+
+> **Consumer note (FrontendSite):** the blog frontend calls this once per unique visitor, deduplicated
+> by `IP + slug` (in-memory, 6-hour window) so refreshes don't recount. Because the increment fires
+> *after* the page reads the count, a visitor never sees their own view reflected on the page they
+> just loaded — it appears on a later view once caches expire.
 
 ---
 
