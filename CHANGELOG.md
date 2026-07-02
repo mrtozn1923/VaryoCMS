@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2026-07-02
+
+### Added
+- **`contact-message` content type (dev seed)**: new additive migration `db/migrations/004_contact_messages.sql` creates a contact-message content type for the `dev-tenant` tenant (fields: `name`, `email`, `subject`, `message`) so the FrontendSite frontend contact form can store submissions in the CMS. Exposed via a **create-only** public API config (`allow_create=1`, read/update/delete off, `is_public=0`, `rate_limit=20/min`) and granted to the existing Tenant API key. Idempotent + additive (does not reset); run after `003`.
+
+> Frontend wiring (ContactController POST → `SubmitContactMessageAsync`, antiforgery + PRG, honeypot/timestamp anti-spam) lives in the separate FrontendSite repository.
+
+---
+
 ## [1.3.0] - 2026-07-02
 
 ### Security
