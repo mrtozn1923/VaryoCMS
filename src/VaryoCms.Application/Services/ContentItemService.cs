@@ -53,13 +53,13 @@ public class ContentItemService : IContentItemService
     public async Task<Result<PagedResult<ContentItemListItemDto>>> GetListAsync(
         int contentTypeId, string languageCode, int page, int pageSize,
         string? searchQuery = null, string? statusFilter = null, string? languageFilter = null,
-        CancellationToken ct = default)
+        bool unreadOnly = false, CancellationToken ct = default)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
 
         var (rows, total) = await _items.GetPagedListAsync(
-            contentTypeId, languageCode, page, pageSize, searchQuery, statusFilter, languageFilter, ct);
+            contentTypeId, languageCode, page, pageSize, searchQuery, statusFilter, languageFilter, unreadOnly, ct);
 
         var ids = rows.Select(r => r.Id).ToList();
         var filledLangs = await _titles.GetFilledLanguagesAsync(ids, ct);
@@ -74,6 +74,7 @@ public class ContentItemService : IContentItemService
             UpdatedAt = r.UpdatedAt,
             CreatedByName = r.CreatedByName,
             UpdatedByName = r.UpdatedByName,
+            IsRead = r.IsRead,
             FilledLanguages = filledLangs.TryGetValue(r.Id, out var langs)
                 ? langs
                 : Array.Empty<(string Code, bool IsActive)>()
@@ -208,6 +209,20 @@ public class ContentItemService : IContentItemService
             .Select(m => new RelatedItemDto { Id = m.Id, DisplayValue = m.Display })
             .ToList();
         return Result<IReadOnlyList<RelatedItemDto>>.Success(dtos);
+    }
+
+    public async Task<Result> SetReadAsync(int contentTypeId, int itemId, bool isRead, CancellationToken ct = default)
+    {
+        var item = await _items.GetByIdAsync(itemId, ct);
+        // Guard: item must belong to the content type the caller was authorized against (route contentTypeId).
+        if (item is null || item.ContentTypeId != contentTypeId)
+            return Result.Failure(_t["Err.ContentItemNotFound"]);
+
+        bool ok = await _items.MarkReadAsync(itemId, isRead, ct);
+        if (!ok) return Result.Failure(_t["Err.ContentItemNotFound"]);
+        await _audit.LogAsync(AuditActions.ContentItemReadToggled, "ContentItem", itemId,
+            item.ContentTypeId, isRead ? "read" : "unread", ct: ct);
+        return Result.Success();
     }
 
     public async Task<Result> DeleteAsync(int contentTypeId, int itemId, CancellationToken ct = default)

@@ -137,6 +137,7 @@ public class ContentTypeService : IContentTypeService
         IsPublished = e.IsPublished,
         SortOrder = e.SortOrder,
         ParentId = e.ParentId,
+        NotifyOnCreate = e.NotifyOnCreate,
         CreatedAt = e.CreatedAt,
         UpdatedAt = e.UpdatedAt
     };

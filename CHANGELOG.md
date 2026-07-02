@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-07-03
+
+### Added
+- **Content-item read/unread inbox**: new `content_items.is_read` column. Items created via the public API start unread (`0`). The admin item list shows an unread badge, a mark-read/unread toggle, and an "unread only" filter — but only for content types flagged as a submission inbox (see `notify_on_create` below), so ordinary content types are unaffected. New audit action `ContentItem.ReadToggled`. Endpoint: `POST /admin/content-types/{ctId}/items/{id}/read` (Update permission, antiforgery, cross-content-type IDOR guard).
+- **Submission notification email**: new `content_types.notify_on_create` flag marks a content type as a "form submission inbox". When set, creating an item via the public API sends a best-effort notification email to the tenant (`ISubmissionNotifier` → `SmtpEmailSender`, per-tenant SMTP from `tenant_email_settings` with system fallback). Best-effort: a mail/SMTP failure is swallowed and never breaks the submission. `contact-message` is flagged by the migration. The same flag drives the read/unread inbox UI above.
+- **Public API view-count increment**: `POST /api/v1/{tenant}/{contentTypeSlug}/{id}/increment-view` atomically does `value_number = value_number + 1` on the item's `view-count` field in a single statement (no read-modify-write race). Bound to **read** permission (a benign analytics side-effect of reading), so no new verb flag or `allow_update` is required. Deliberately not audited (high-frequency) and does not invalidate the response cache (counts may lag by the cache TTL — acceptable for a counter).
+- Migration `005_inbox_and_notify.sql` (additive, idempotent): the two columns above + a filtered `IX_content_items_unread` index + the inbox UI translation keys. Test projects (integration + UI) now include `005` so repository queries against the new columns pass.
+
+> **Frontend (separate FrontendSite repo):** the blog detail page now triggers the view-count increment once per unique visitor, deduplicated by `IP + slug` via `IMemoryCache` (a 6-hour window, so refreshes don't recount; `X-Forwarded-For`-aware for proxies). The contact form (wired in 1.3.x) posts submissions that now land as unread inbox items and fire the notification email.
+
+---
+
 ## [1.3.1] - 2026-07-02
 
 ### Added

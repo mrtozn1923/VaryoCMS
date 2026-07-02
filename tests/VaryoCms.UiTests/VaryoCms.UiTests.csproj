@@ -19,8 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Copy schema+base migrations only. Dev-user-specific seeds (003+) excluded —
-         they wipe dev-tenant; tests rely on the dev-tenant created by 002. -->
+    <!-- Copy schema + base seed + additive platform migrations. Tenant-specific dev seeds like
+         003/004 (which wipe/target dev data) are excluded; but additive schema migrations (005:
+         is_read / notify_on_create columns) MUST be included or repository queries fail. -->
     <Content Include="..\..\db\migrations\001_v1_schema.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>migrations\001_v1_schema.sql</Link>
@@ -28,6 +29,10 @@
     <Content Include="..\..\db\migrations\002_v1_dev_seed.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>migrations\002_v1_dev_seed.sql</Link>
+    </Content>
+    <Content Include="..\..\db\migrations\005_inbox_and_notify.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>migrations\005_inbox_and_notify.sql</Link>
     </Content>
   </ItemGroup>
 

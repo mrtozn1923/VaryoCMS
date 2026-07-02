@@ -36,14 +36,14 @@ public class ContentItemController : Controller
     [HttpGet("")]
     [RequireContentTypePermission(ContentPermission.Read)]
     public async Task<IActionResult> Index(
-        int contentTypeId, int page, string? q, string? status, string? filterLang, CancellationToken ct)
+        int contentTypeId, int page, string? q, string? status, string? filterLang, bool unread, CancellationToken ct)
     {
         var type = await _types.GetByIdAsync(contentTypeId, ct);
         if (!type.IsSuccess) return NotFound();
 
         int currentPage = page < 1 ? 1 : page;
         var list = await _items.GetListAsync(
-            contentTypeId, _language.CurrentCode, currentPage, 20, q, status, filterLang, ct);
+            contentTypeId, _language.CurrentCode, currentPage, 20, q, status, filterLang, unread, ct);
         var p = list.Value!;
         var perms = await _permissions.GetPermissionsAsync(contentTypeId, ct);
         var langs = await _languages.GetActiveAsync(ct);
@@ -51,11 +51,22 @@ public class ContentItemController : Controller
         return View(new ContentItemListViewModel
         {
             ContentTypeId = contentTypeId, ContentTypeName = type.Value!.Name,
+            IsInbox = type.Value!.NotifyOnCreate,
             Items = p.Items, Page = p.Page, PageSize = p.PageSize, Total = p.Total, TotalPages = p.TotalPages,
             CanCreate = perms.CanCreate, CanUpdate = perms.CanUpdate, CanDelete = perms.CanDelete,
-            Q = q, StatusFilter = status, LanguageFilter = filterLang,
+            Q = q, StatusFilter = status, LanguageFilter = filterLang, UnreadOnly = unread,
             AvailableLanguages = langs
         });
+    }
+
+    // Okundu/okunmadı işaretle (yalnızca gelen-kutusu tipleri için anlamlı). Update yetkisi gerektirir.
+    [HttpPost("{id:int}/read")]
+    [ValidateAntiForgeryToken]
+    [RequireContentTypePermission(ContentPermission.Update)]
+    public async Task<IActionResult> SetRead(int contentTypeId, int id, bool isRead, CancellationToken ct)
+    {
+        await _items.SetReadAsync(contentTypeId, id, isRead, ct);
+        return RedirectToAction(nameof(Index), new { contentTypeId });
     }
 
     // Relation picker search — contentTypeId here is the *target* content type being searched.

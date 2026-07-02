@@ -31,10 +31,12 @@ public class PublicApiService : IPublicApiService
     private readonly IJwtTokenService _jwt;
     private readonly IResponseCache _cache;
     private readonly IAuditLogger _audit;
+    private readonly ISubmissionNotifier _notifier;
 
     public PublicApiService(
         ITenantStore tenantStore, IPublicApiRepository repo, IPublicApiWriteRepository writeRepo,
-        IPasswordHasher passwordHasher, IJwtTokenService jwt, IResponseCache cache, IAuditLogger audit)
+        IPasswordHasher passwordHasher, IJwtTokenService jwt, IResponseCache cache, IAuditLogger audit,
+        ISubmissionNotifier notifier)
     {
         _tenantStore = tenantStore;
         _repo = repo;
@@ -43,6 +45,7 @@ public class PublicApiService : IPublicApiService
         _jwt = jwt;
         _cache = cache;
         _audit = audit;
+        _notifier = notifier;
     }
 
     public async Task<Result<ApiListResponse>> GetListAsync(
@@ -524,6 +527,20 @@ public class PublicApiService : IPublicApiService
             contentTypeId: config.ContentTypeId, entityName: body.Title ?? slug,
             tenantIdOverride: tenant.Id, userEmailOverride: credentialIdentity, ct: ct);
 
+        // "Form gönderim kutusu" tiplerinde (notify_on_create) tenant'a bildirim e-postası gönder.
+        // Best-effort: notifier hataları yutar, submission'ı bozmaz.
+        if (config.NotifyOnCreate)
+        {
+            var notifyFields = visibleFieldsList
+                .Select(f => (Label: f.Field.Name,
+                              Value: body.Fields is not null
+                                     && body.Fields.TryGetValue(ExternalKey(f.Field.Slug, f.Alias), out var el)
+                                     ? JsonElementToText(el) : ""))
+                .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                .ToList();
+            await _notifier.NotifyNewSubmissionAsync(tenant.Id, contentTypeSlug, body.Title, notifyFields, ct);
+        }
+
         // Return the newly created item (without language gate — item may not be activated yet).
         var newItem = await _writeRepo.GetItemByIdAsync(tenant.Id, config.ContentTypeId, itemId, ct);
         if (newItem is null) return Result<ApiItemDto>.Failure("NotFound");
@@ -584,6 +601,20 @@ public class PublicApiService : IPublicApiService
         return Result<ApiItemDto>.Success(dto[0]);
     }
 
+    // Atomically +1 the item's "view-count" Number field. Bound to read permission (see ResolveForWriteAsync
+    // "increment" case). Deliberately NOT audited (high-frequency) and does NOT invalidate cache (view counts
+    // may lag by the list cache TTL — acceptable for an analytics counter, avoids cache thrash on every view).
+    public async Task<Result> IncrementViewAsync(
+        string tenantSlug, string contentTypeSlug, int id, ApiCredentials credentials, CancellationToken ct = default)
+    {
+        var ctx = await ResolveForWriteAsync(tenantSlug, contentTypeSlug, credentials, "increment", ct);
+        if (ctx.Error is not null) return Result.Failure(ctx.Error);
+        var (tenant, config) = (ctx.Tenant!, ctx.Config!);
+
+        bool ok = await _writeRepo.IncrementFieldNumberAsync(tenant.Id, config.ContentTypeId, id, "view-count", ct);
+        return ok ? Result.Success() : Result.Failure("NotFound");
+    }
+
     public async Task<Result> DeleteAsync(
         string tenantSlug, string contentTypeSlug, int id, ApiCredentials credentials, CancellationToken ct = default)
     {
@@ -628,6 +659,9 @@ public class PublicApiService : IPublicApiService
             "create" => config.AllowCreate,
             "update" => config.AllowUpdate,
             "delete" => config.AllowDelete,
+            // View-count increment is a benign read side-effect: allowed for any credential that can
+            // read the content type (no separate write permission needed to bump an analytics counter).
+            "increment" => config.AllowRead,
             _ => false
         };
         if (!permitted)
@@ -732,6 +766,15 @@ public class PublicApiService : IPublicApiService
     }
 
     // Converts a JsonElement to the raw string FieldValueMapper.Apply expects.
+    // Plain-text rendering of a submitted scalar for the notification email (string → as-is; else JSON text).
+    private static string JsonElementToText(JsonElement element) =>
+        element.ValueKind switch
+        {
+            JsonValueKind.String => element.GetString() ?? "",
+            JsonValueKind.Null or JsonValueKind.Undefined => "",
+            _ => element.ToString()
+        };
+
     private static string? JsonToRaw(FieldType type, JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.Null || element.ValueKind == JsonValueKind.Undefined)

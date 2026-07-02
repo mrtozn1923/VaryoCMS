@@ -75,6 +75,42 @@ public class PublicApiWriteRepository : BaseRepository, IPublicApiWriteRepositor
         return await conn.ExecuteAsync(command) > 0;
     }
 
+    // Atomically +1 a Number field's value_number for one item. Resolves the field id by slug, and
+    // upserts the (item, field, 'all') row (view-count is not localized → language_code = 'all').
+    // Single statement → no read-modify-write race. Returns false if the field/item doesn't exist.
+    public async Task<bool> IncrementFieldNumberAsync(
+        int tenantId, int contentTypeId, int itemId, string fieldSlug, CancellationToken ct = default)
+    {
+        using var conn = CreateConnection();
+        var command = new CommandDefinition(
+            @"DECLARE @FieldId INT = (
+                  SELECT id FROM content_fields
+                  WHERE tenant_id = @TenantId AND content_type_id = @ContentTypeId
+                    AND slug = @FieldSlug AND is_deleted = 0);
+
+              IF @FieldId IS NULL RETURN;
+
+              -- Item must exist, belong to this tenant+content type, and not be deleted.
+              IF NOT EXISTS (SELECT 1 FROM content_items
+                             WHERE id = @ItemId AND tenant_id = @TenantId
+                               AND content_type_id = @ContentTypeId AND is_deleted = 0)
+                  RETURN;
+
+              MERGE content_field_values AS t
+              USING (SELECT @ItemId AS content_item_id, @FieldId AS content_field_id, N'all' AS language_code) AS s
+                ON t.content_item_id = s.content_item_id
+               AND t.content_field_id = s.content_field_id
+               AND t.language_code = s.language_code
+              WHEN MATCHED THEN UPDATE SET
+                  value_number = ISNULL(t.value_number, 0) + 1, updated_at = GETUTCDATE()
+              WHEN NOT MATCHED THEN INSERT
+                  (tenant_id, content_item_id, content_field_id, language_code, value_number, created_at, updated_at)
+                  VALUES (@TenantId, @ItemId, @FieldId, N'all', 1, GETUTCDATE(), GETUTCDATE());",
+            new { TenantId = tenantId, ContentTypeId = contentTypeId, ItemId = itemId, FieldSlug = fieldSlug },
+            cancellationToken: ct);
+        return await conn.ExecuteAsync(command) > 0;
+    }
+
     public async Task<bool> SoftDeleteItemAsync(int tenantId, int contentTypeId, int itemId, CancellationToken ct = default)
     {
         using var conn = CreateConnection();

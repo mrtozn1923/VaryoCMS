@@ -66,6 +66,8 @@ CREATE TABLE content_types (
     icon            NVARCHAR(100),            -- icon class e.g. "bi-file-text"
     is_published    BIT NOT NULL DEFAULT 0,
     sort_order      INT NOT NULL DEFAULT 0,   -- menu order
+    notify_on_create BIT NOT NULL DEFAULT 0,  -- migration 005: "form submission inbox" type
+                                              -- (public-API create → email notify + read/unread UI)
     created_at      DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     updated_at      DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     is_deleted      BIT NOT NULL DEFAULT 0,
@@ -131,7 +133,8 @@ CREATE TABLE content_items (
     published_at    DATETIME2,
     created_at      DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     updated_at      DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    is_deleted      BIT NOT NULL DEFAULT 0
+    is_deleted      BIT NOT NULL DEFAULT 0,
+    is_read         BIT NOT NULL DEFAULT 0    -- migration 005: read/unread for submission-inbox types
 );
 ```
 

@@ -19,8 +19,9 @@ public class PublicApiServiceTests
     private readonly IJwtTokenService _jwt = Substitute.For<IJwtTokenService>();
     private readonly IResponseCache _cache = Substitute.For<IResponseCache>();
     private readonly IAuditLogger _audit = Substitute.For<IAuditLogger>();
+    private readonly ISubmissionNotifier _notifier = Substitute.For<ISubmissionNotifier>();
 
-    private PublicApiService Sut() => new(_tenants, _repo, _writeRepo, _hasher, _jwt, _cache, _audit);
+    private PublicApiService Sut() => new(_tenants, _repo, _writeRepo, _hasher, _jwt, _cache, _audit, _notifier);
 
     private static readonly ApiCredentials NoCreds = new(null, null);
 

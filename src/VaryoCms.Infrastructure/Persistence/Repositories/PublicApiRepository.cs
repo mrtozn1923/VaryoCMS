@@ -28,6 +28,7 @@ public class PublicApiRepository : BaseRepository, IPublicApiRepository
             @"SELECT c.id, c.tenant_id, c.content_type_id, c.is_enabled, c.is_public,
                      c.allow_filtering, c.allow_sorting, c.allow_pagination, c.rate_limit_per_min,
                      c.cache_seconds, c.allow_read, c.allow_create, c.allow_update, c.allow_delete,
+                     ct.notify_on_create,
                      c.created_at, c.updated_at
               FROM api_configurations c
               JOIN content_types ct ON ct.id = c.content_type_id

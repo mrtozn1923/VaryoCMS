@@ -11,4 +11,5 @@ public class ContentItemListRow
     public string? Title { get; set; }
     public string? CreatedByName { get; set; }
     public string? UpdatedByName { get; set; }
+    public bool IsRead { get; set; }
 }

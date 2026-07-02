@@ -18,7 +18,7 @@ public class ContentTypeRepository : BaseRepository, IContentTypeRepository
         using var conn = CreateConnection();
         var command = new CommandDefinition(
             @"SELECT id, tenant_id, name, slug, description, icon, is_published, sort_order, parent_id,
-                     created_at, updated_at, is_deleted
+                     notify_on_create, created_at, updated_at, is_deleted
               FROM content_types
               WHERE id = @Id AND tenant_id = @TenantId AND is_deleted = 0",
             new { Id = id, TenantId = _tenantContext.TenantId },
@@ -31,7 +31,7 @@ public class ContentTypeRepository : BaseRepository, IContentTypeRepository
         using var conn = CreateConnection();
         var command = new CommandDefinition(
             @"SELECT id, tenant_id, name, slug, description, icon, is_published, sort_order, parent_id,
-                     created_at, updated_at, is_deleted
+                     notify_on_create, created_at, updated_at, is_deleted
               FROM content_types
               WHERE tenant_id = @TenantId AND is_deleted = 0
               ORDER BY sort_order ASC, name ASC",
@@ -45,9 +45,9 @@ public class ContentTypeRepository : BaseRepository, IContentTypeRepository
     {
         using var conn = CreateConnection();
         var command = new CommandDefinition(
-            @"INSERT INTO content_types (tenant_id, name, slug, description, icon, is_published, sort_order, parent_id)
+            @"INSERT INTO content_types (tenant_id, name, slug, description, icon, is_published, sort_order, parent_id, notify_on_create)
               OUTPUT INSERTED.id
-              VALUES (@TenantId, @Name, @Slug, @Description, @Icon, @IsPublished, @SortOrder, @ParentId)",
+              VALUES (@TenantId, @Name, @Slug, @Description, @Icon, @IsPublished, @SortOrder, @ParentId, @NotifyOnCreate)",
             new
             {
                 TenantId = _tenantContext.TenantId,
@@ -57,7 +57,8 @@ public class ContentTypeRepository : BaseRepository, IContentTypeRepository
                 entity.Icon,
                 entity.IsPublished,
                 entity.SortOrder,
-                entity.ParentId
+                entity.ParentId,
+                entity.NotifyOnCreate
             },
             cancellationToken: ct);
         return await conn.ExecuteScalarAsync<int>(command);
@@ -70,7 +71,7 @@ public class ContentTypeRepository : BaseRepository, IContentTypeRepository
             @"UPDATE content_types
               SET name = @Name, slug = @Slug, description = @Description, icon = @Icon,
                   is_published = @IsPublished, sort_order = @SortOrder, parent_id = @ParentId,
-                  updated_at = GETUTCDATE()
+                  notify_on_create = @NotifyOnCreate, updated_at = GETUTCDATE()
               WHERE id = @Id AND tenant_id = @TenantId AND is_deleted = 0",
             new
             {
@@ -82,7 +83,8 @@ public class ContentTypeRepository : BaseRepository, IContentTypeRepository
                 entity.Icon,
                 entity.IsPublished,
                 entity.SortOrder,
-                entity.ParentId
+                entity.ParentId,
+                entity.NotifyOnCreate
             },
             cancellationToken: ct);
         return await conn.ExecuteAsync(command) > 0;

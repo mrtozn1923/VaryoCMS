@@ -12,7 +12,7 @@ public interface IContentItemRepository
     Task<(IReadOnlyList<ContentItemListRow> Rows, int Total)> GetPagedListAsync(
         int contentTypeId, string languageCode, int page, int pageSize,
         string? searchQuery = null, string? statusFilter = null, string? languageFilter = null,
-        CancellationToken ct = default);
+        bool unreadOnly = false, CancellationToken ct = default);
 
     Task<bool> SlugExistsAsync(int contentTypeId, string slug, int? excludeItemId, CancellationToken ct = default);
 
@@ -20,4 +20,5 @@ public interface IContentItemRepository
     Task<int> CreateAsync(ContentItem entity, CancellationToken ct = default);
     Task<bool> UpdateAsync(ContentItem entity, CancellationToken ct = default);
     Task<bool> SoftDeleteAsync(int id, CancellationToken ct = default);
+    Task<bool> MarkReadAsync(int id, bool isRead, CancellationToken ct = default);
 }

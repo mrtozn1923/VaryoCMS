@@ -13,6 +13,7 @@ public static class AuditActions
     public const string ContentItemCreated = "ContentItem.Created";
     public const string ContentItemUpdated = "ContentItem.Updated";
     public const string ContentItemDeleted = "ContentItem.Deleted";
+    public const string ContentItemReadToggled = "ContentItem.ReadToggled";
 
     public const string ContentTypeCreated  = "ContentType.Created";
     public const string ContentTypeUpdated  = "ContentType.Updated";

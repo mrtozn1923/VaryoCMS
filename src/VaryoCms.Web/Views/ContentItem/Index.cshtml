@@ -2,7 +2,7 @@
 @using VaryoCms.Application.DTOs.Localization
 @{
     ViewData["Title"] = Model.ContentTypeName;
-    bool hasFilter = !string.IsNullOrEmpty(Model.Q) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.LanguageFilter);
+    bool hasFilter = !string.IsNullOrEmpty(Model.Q) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.LanguageFilter) || Model.UnreadOnly;
 }
 
 @section Breadcrumb {
@@ -60,6 +60,16 @@
                 </select>
             </div>
         }
+        @if (Model.IsInbox)
+        {
+            <div class="col-auto">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="unread" value="true" id="unreadOnly"
+                           @(Model.UnreadOnly ? "checked" : "") onchange="this.form.submit()" />
+                    <label class="form-check-label" for="unreadOnly">@L["ContentItem.Filter.UnreadOnly"]</label>
+                </div>
+            </div>
+        }
         <div class="col-auto d-flex gap-1">
             <button type="submit" class="btn cms-btn-primary">@L["ContentItem.Filter.Apply"]</button>
             @if (hasFilter)
@@ -103,12 +113,19 @@ else
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
-                    <tr>
+                    bool unread = Model.IsInbox && !item.IsRead;
+                    <tr class="@(unread ? "fw-semibold" : "")" style="@(unread ? "background:var(--cms-unread-bg, rgba(99,102,241,.05))" : "")">
                         <td class="text-muted small">@item.Id</td>
                         <td>
+                            @if (unread)
+                            {
+                                <span class="badge cms-badge-warning me-1" title="@L["ContentItem.Unread"]">
+                                    <i class="bi bi-circle-fill me-1" style="font-size:.5em;vertical-align:middle"></i>@L["ContentItem.Unread"]
+                                </span>
+                            }
                             @if (!string.IsNullOrEmpty(item.Title))
                             {
-                                <div class="fw-medium">@item.Title</div>
+                                <div class="@(unread ? "fw-bold" : "fw-medium")">@item.Title</div>
                             }
                             @if (!string.IsNullOrEmpty(item.Slug))
                             {
@@ -179,6 +196,18 @@ else
                         </td>
                         <td>
                             <div class="cms-row-actions">
+                                @if (Model.IsInbox && Model.CanUpdate)
+                                {
+                                    <form method="post" asp-action="SetRead"
+                                          asp-route-contentTypeId="@Model.ContentTypeId" asp-route-id="@item.Id">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="isRead" value="@((!item.IsRead).ToString().ToLower())" />
+                                        <button type="submit" class="cms-action-btn"
+                                                title="@(item.IsRead ? L["ContentItem.MarkUnread"] : L["ContentItem.MarkRead"])">
+                                            <i class="bi @(item.IsRead ? "bi-envelope" : "bi-envelope-open")"></i>
+                                        </button>
+                                    </form>
+                                }
                                 @if (Model.CanUpdate)
                                 {
                                     <a class="cms-action-btn" title="@L["Common.Edit"]"
@@ -222,7 +251,8 @@ else
                            asp-route-page="@p"
                            asp-route-q="@Model.Q"
                            asp-route-status="@Model.StatusFilter"
-                           asp-route-filterLang="@Model.LanguageFilter">@p</a>
+                           asp-route-filterLang="@Model.LanguageFilter"
+                           asp-route-unread="@(Model.UnreadOnly ? "true" : null)">@p</a>
                     </li>
                 }
             </ul>

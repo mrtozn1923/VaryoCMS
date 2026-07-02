@@ -57,6 +57,16 @@ public class PublicApiController : ControllerBase
         return NoContent();
     }
 
+    // Atomically +1 the item's view-count. Bound to read permission (see PublicApiService).
+    [HttpPost("{id:int}/increment-view")]
+    public async Task<IActionResult> IncrementView(
+        string tenantSlug, string contentTypeSlug, int id, CancellationToken ct)
+    {
+        var result = await _api.IncrementViewAsync(tenantSlug, contentTypeSlug, id, Credentials(), ct);
+        if (!result.IsSuccess) return MapWriteError(result.Error);
+        return NoContent();
+    }
+
     // Uses explicit StatusCode() so cookie authentication does not redirect to login.
     private IActionResult MapWriteError(string? error) => error switch
     {

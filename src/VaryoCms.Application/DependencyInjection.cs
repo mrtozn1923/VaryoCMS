@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<ILoginCodeService, LoginCodeService>();
         services.AddScoped<IApiDocService, ApiDocService>();
+        services.AddScoped<ISubmissionNotifier, SubmissionNotifier>();
 
         return services;
     }

@@ -28,6 +28,10 @@ public interface IPublicApiWriteRepository
     // Soft-deletes a content item. Returns false when the item is not found.
     Task<bool> SoftDeleteItemAsync(int tenantId, int contentTypeId, int itemId, CancellationToken ct = default);
 
+    // Atomically increments a Number field's value_number by 1 for one item (e.g. view-count).
+    Task<bool> IncrementFieldNumberAsync(
+        int tenantId, int contentTypeId, int itemId, string fieldSlug, CancellationToken ct = default);
+
     // Fetches a single published item for the given tenant+content-type (for update validation).
     Task<ContentItem?> GetItemByIdAsync(int tenantId, int contentTypeId, int itemId, CancellationToken ct = default);
 

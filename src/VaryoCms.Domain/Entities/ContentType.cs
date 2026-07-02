@@ -11,6 +11,9 @@ public class ContentType
     public bool IsPublished { get; set; }
     public int SortOrder { get; set; }
     public int? ParentId { get; set; }
+    // True = "form gönderim kutusu" tipi: public API'den yeni kayıt gelince e-posta bildirimi
+    // gönderilir ve admin liste görünümü okundu/okunmadı (gelen-kutusu) UI'sını gösterir.
+    public bool NotifyOnCreate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }

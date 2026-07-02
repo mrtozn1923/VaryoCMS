@@ -24,6 +24,8 @@ public class ApiConfiguration
     public bool AllowCreate { get; set; }
     public bool AllowUpdate { get; set; }
     public bool AllowDelete { get; set; }
+    // Joined from content_types (GetEnabledConfigAsync): triggers a submission notification email on create.
+    public bool NotifyOnCreate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

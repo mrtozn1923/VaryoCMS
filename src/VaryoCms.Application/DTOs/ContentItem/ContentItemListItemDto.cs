@@ -10,6 +10,7 @@ public class ContentItemListItemDto
     public DateTime UpdatedAt { get; set; }
     public string? CreatedByName { get; set; }
     public string? UpdatedByName { get; set; }
+    public bool IsRead { get; set; }
     // (Code, IsActive) pairs — active=published in that language, inactive=draft/unreleased.
     public IReadOnlyList<(string Code, bool IsActive)> FilledLanguages { get; set; } = Array.Empty<(string, bool)>();
 }

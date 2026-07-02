@@ -10,6 +10,8 @@ public class ContentTypeDto
     public bool IsPublished { get; set; }
     public int SortOrder { get; set; }
     public int? ParentId { get; set; }
+    // True = form gönderim kutusu tipi (admin liste görünümü okundu/okunmadı UI'sını gösterir).
+    public bool NotifyOnCreate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

@@ -8,7 +8,7 @@ namespace VaryoCms.Infrastructure.Persistence.Repositories;
 public class ContentItemRepository : BaseRepository, IContentItemRepository
 {
     private const string Columns =
-        "id, tenant_id, content_type_id, slug, status, created_by, updated_by, published_at, created_at, updated_at, is_deleted";
+        "id, tenant_id, content_type_id, slug, status, created_by, updated_by, published_at, created_at, updated_at, is_deleted, is_read";
 
     private readonly ITenantContext _tenantContext;
 
@@ -48,7 +48,7 @@ public class ContentItemRepository : BaseRepository, IContentItemRepository
     public async Task<(IReadOnlyList<ContentItemListRow> Rows, int Total)> GetPagedListAsync(
         int contentTypeId, string languageCode, int page, int pageSize,
         string? searchQuery = null, string? statusFilter = null, string? languageFilter = null,
-        CancellationToken ct = default)
+        bool unreadOnly = false, CancellationToken ct = default)
     {
         using var conn = CreateConnection();
         var args = new
@@ -60,7 +60,8 @@ public class ContentItemRepository : BaseRepository, IContentItemRepository
             Take = pageSize,
             Q = string.IsNullOrWhiteSpace(searchQuery) ? null : searchQuery.Trim(),
             StatusFilter = string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter.Trim(),
-            LanguageFilter = string.IsNullOrWhiteSpace(languageFilter) ? null : languageFilter.Trim()
+            LanguageFilter = string.IsNullOrWhiteSpace(languageFilter) ? null : languageFilter.Trim(),
+            UnreadOnly = unreadOnly
         };
 
         const string filterWhere = @"
@@ -72,6 +73,7 @@ public class ContentItemRepository : BaseRepository, IContentItemRepository
                                   AND cit2.title LIKE '%' + @Q + '%'
                                   AND cit2.tenant_id       = ci.tenant_id))
                 AND (@StatusFilter IS NULL OR ci.status = @StatusFilter)
+                AND (@UnreadOnly = 0 OR ci.is_read = 0)
                 AND (@LanguageFilter IS NULL OR EXISTS (
                      SELECT 1 FROM content_item_titles cit3
                      WHERE cit3.content_item_id = ci.id
@@ -80,7 +82,7 @@ public class ContentItemRepository : BaseRepository, IContentItemRepository
                        AND cit3.tenant_id        = ci.tenant_id))";
 
         var listCmd = new CommandDefinition(
-            $@"SELECT ci.id, ci.slug, ci.status, ci.created_at, ci.updated_at,
+            $@"SELECT ci.id, ci.slug, ci.status, ci.created_at, ci.updated_at, ci.is_read,
                      t.title,
                      COALESCE(cu.full_name, cu.email) AS created_by_name,
                      COALESCE(uu.full_name, uu.email) AS updated_by_name
@@ -194,6 +196,19 @@ public class ContentItemRepository : BaseRepository, IContentItemRepository
             @"UPDATE content_items SET is_deleted = 1, updated_at = GETUTCDATE()
               WHERE id = @Id AND tenant_id = @TenantId AND is_deleted = 0",
             new { Id = id, TenantId = _tenantContext.TenantId },
+            cancellationToken: ct);
+        return await conn.ExecuteAsync(command) > 0;
+    }
+
+    // Okundu/okunmadı işaretle. updated_at'i DEĞİŞTİRMEZ — okundu işaretlemek "güncelleme" değildir,
+    // aksi halde liste sırasını (updated_at DESC) ve created/updated göstergesini bozar.
+    public async Task<bool> MarkReadAsync(int id, bool isRead, CancellationToken ct = default)
+    {
+        using var conn = CreateConnection();
+        var command = new CommandDefinition(
+            @"UPDATE content_items SET is_read = @IsRead
+              WHERE id = @Id AND tenant_id = @TenantId AND is_deleted = 0",
+            new { Id = id, IsRead = isRead, TenantId = _tenantContext.TenantId },
             cancellationToken: ct);
         return await conn.ExecuteAsync(command) > 0;
     }

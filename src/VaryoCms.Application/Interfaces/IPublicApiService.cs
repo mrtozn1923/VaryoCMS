@@ -22,4 +22,8 @@ public interface IPublicApiService
         string tenantSlug, string contentTypeSlug, int id, ApiWriteRequest body, ApiCredentials credentials, CancellationToken ct = default);
     Task<Result> DeleteAsync(
         string tenantSlug, string contentTypeSlug, int id, ApiCredentials credentials, CancellationToken ct = default);
+
+    // Atomically increments the item's "view-count" field. Bound to read permission.
+    Task<Result> IncrementViewAsync(
+        string tenantSlug, string contentTypeSlug, int id, ApiCredentials credentials, CancellationToken ct = default);
 }
