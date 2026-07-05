@@ -1,9 +1,17 @@
 @model FieldRenderModel
 @{
-    var name = $"Values[{Model.Id}]";
-    var id = $"field_{Model.Id}";
-    var val = Model.Value;
+    // Shared (is_localized=false) fields are rendered once with no "Lang" in ViewData — unchanged
+    // Values[id]/field_id names. Localized fields are rendered once per active language (see
+    // _ItemFormBody.cshtml's language panels), each passing its own language via view-data, so the
+    // same field id needs a language-scoped name/id per copy to avoid colliding on the same page.
+    var lang = ViewData["Lang"] as string;
+    var name = lang is null ? $"Values[{Model.Id}]" : $"LocalizedValues[{lang}][{Model.Id}]";
+    var id = lang is null ? $"field_{Model.Id}" : $"field_{lang}_{Model.Id}";
+    var val = lang is null ? Model.Value : Model.ValuesByLang.GetValueOrDefault(lang);
     var req = Model.IsRequired ? "required" : null;
+    var rangeStartName = lang is null ? $"RangeStart[{Model.Id}]" : $"LocalizedRangeStart[{lang}][{Model.Id}]";
+    var rangeEndName = lang is null ? $"RangeEnd[{Model.Id}]" : $"LocalizedRangeEnd[{lang}][{Model.Id}]";
+    var selectedMedia = lang is null ? Model.SelectedMedia : (Model.SelectedMediaByLang.GetValueOrDefault(lang) ?? new());
 }
 
 <div class="cms-form-group">
@@ -48,11 +56,11 @@
             var range = SplitRange(val);
             <div class="row g-2">
                 <div class="col">
-                    <input type="date" class="form-control" name="RangeStart[@Model.Id]" value="@range.Start" required="@req" />
+                    <input type="date" class="form-control" name="@rangeStartName" value="@range.Start" required="@req" />
                     <div class="cms-hint">@L["ContentItem.RangeStart"]</div>
                 </div>
                 <div class="col">
-                    <input type="date" class="form-control" name="RangeEnd[@Model.Id]" value="@range.End" />
+                    <input type="date" class="form-control" name="@rangeEndName" value="@range.End" />
                     <div class="cms-hint">@L["ContentItem.RangeEnd"]</div>
                 </div>
             </div>
@@ -146,7 +154,7 @@
                  data-allowed-formats="@(Model.MediaAllowedFormats.Count > 0 ? string.Join(",", Model.MediaAllowedFormats) : null)">
                 <input type="hidden" name="@name" class="mp-value" value="@val" />
                 <div class="mp-chips d-flex flex-wrap gap-2 mb-2">
-                    @foreach (var m in Model.SelectedMedia)
+                    @foreach (var m in selectedMedia)
                     {
                         @* data-url / data-media-type / data-name allow JS to reconstruct media objects
                            for Gallery re-commit without an extra fetch. *@

@@ -15,12 +15,21 @@ public class FieldRenderModel
     public bool IsRequired { get; set; }
     public bool IsLocalized { get; set; }
     public string? OptionsJson { get; set; }
-    public string? Value { get; set; }
 
-    // The form's active language — relation search results are resolved in this language.
+    // Shared (is_localized = false) fields render from these single values, unchanged.
+    public string? Value { get; set; }
+    public List<MediaAssetDto> SelectedMedia { get; set; } = new();
+
+    // Localized (is_localized = true) fields render once per active language instead — see
+    // _FieldInput.cshtml's `lang` parameter. Keyed by language code.
+    public Dictionary<string, string?> ValuesByLang { get; set; } = new();
+    public Dictionary<string, List<MediaAssetDto>> SelectedMediaByLang { get; set; } = new();
+
+    // The form's active (primary) language — relation search results are resolved in this language.
     public string LanguageCode { get; set; } = "tr";
 
-    // Relation/MultiRelation render data.
+    // Relation/MultiRelation render data — never localized (content_field_relations has no
+    // language_code column), so a single shared set regardless of IsLocalized.
     public int? RelationTargetTypeId { get; set; }
     public string? RelationDisplayField { get; set; }
     public bool RelationMultiple { get; set; }
@@ -31,7 +40,6 @@ public class FieldRenderModel
     // Media field render data (Image/Video/Audio/File/Gallery).
     public bool MediaMultiple { get; set; }          // Gallery
     public string? MediaTypeFilter { get; set; }     // image | video | audio | null (any)
-    public List<MediaAssetDto> SelectedMedia { get; set; } = new();
 
     // Options parsed from options_json — set by ContentItemFormFactory.
     public string? Placeholder { get; set; }

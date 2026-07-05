@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.2] - 2026-07-05
+
+### Fixed
+- **Language tabs discarded unsaved input**: the content-item create/edit form's TR/EN tabs were plain `<a>` links that triggered a full page GET, reloading the form from the database — any unsaved typing in the outgoing language was lost. Replaced with genuine client-side tabs (`content-item-tabs.js`): every active language's field values load in one page fetch and switching tabs is a pure DOM show/hide, no reload, no data loss. `ContentItemFormFactory.BuildAsync` now gathers every active language up front and splits values into shared (`is_localized=false` fields, `content_items.slug/status`, relations) vs. per-language (`Titles`, `LanguageActive`, `LocalizedValues`) groups. Saving loops the existing single-language `IContentItemService.CreateAsync`/`UpdateAsync` once per language via a new `ContentItemSaveCoordinator` — the Application-layer save contract is unchanged. A language with no submitted content is skipped in the save loop so an untranslated required field never blocks saving the language you're actually editing.
+- **`SetRead` silently swallowed failures**: the read/unread toggle action ignored `IContentItemService.SetReadAsync`'s `Result` — a cross-content-type guard failure looked like success to the user. Now surfaces the error via `TempData["Error"]` (new banner on `ContentItem/Index.cshtml`).
+
+### Security
+Reviewed everything added since the v1.3.0 audit (submission inbox, `increment-view`, DataProtection persistence, 2FA expiry fix, and this release's language-tab rework) — no new tenant-isolation, IDOR, XSS, or CSRF issues found. `increment-view`/`SetRead` already enforce `tenant_id` + `content_type_id` scoping; the new per-language save loop only ever iterates the tenant's actual active languages (server-resolved), so a posted language code outside that set is never written. Full suite re-run clean: 182/182 (156 unit, 8 integration, 18 UI).
+
 ## [1.4.1] - 2026-07-05
 
 ### Fixed

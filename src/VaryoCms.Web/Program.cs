@@ -99,6 +99,7 @@ builder.Services.AddScoped<ILanguageContext>(sp => sp.GetRequiredService<Languag
 
 // Web-side view-model composition helpers.
 builder.Services.AddScoped<VaryoCms.Web.Support.ContentItemFormFactory>();
+builder.Services.AddScoped<VaryoCms.Web.Support.ContentItemSaveCoordinator>();
 
 // File storage needs the physical web root, so it is wired at the composition root.
 builder.Services.AddSingleton<IFileStorageService>(

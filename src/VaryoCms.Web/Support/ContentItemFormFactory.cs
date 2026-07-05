@@ -1,6 +1,7 @@
 using VaryoCms.Application.Common;
 using VaryoCms.Application.Common.FieldOptions;
 using VaryoCms.Application.DTOs.ContentItem;
+using VaryoCms.Application.DTOs.Media;
 using VaryoCms.Application.Interfaces;
 using VaryoCms.Domain.Enums;
 using VaryoCms.Web.ViewModels;
@@ -56,52 +57,103 @@ public class ContentItemFormFactory
     }
 
     public async Task<ContentItemFormViewModel?> BuildAsync(
-        int contentTypeId, int? itemId, string languageCode, CancellationToken ct)
+        int contentTypeId, int? itemId, string primaryLanguageCode, CancellationToken ct)
     {
         var type = await _types.GetByIdAsync(contentTypeId, ct);
         if (!type.IsSuccess) return null;
 
         var fields = await _fields.GetByContentTypeAsync(contentTypeId, ct);
+        var fieldById = fields.Value!.ToDictionary(f => f.Id);
+
+        var activeLanguages = await _languages.GetActiveAsync(ct);
+        var languageCodes = activeLanguages.Count > 0
+            ? activeLanguages.Select(l => l.Code).ToList()
+            : new List<string> { primaryLanguageCode };
+        if (!languageCodes.Contains(primaryLanguageCode)) languageCodes.Insert(0, primaryLanguageCode);
 
         var vm = new ContentItemFormViewModel
         {
             ContentTypeId = contentTypeId,
             ContentTypeName = type.Value!.Name,
-            LanguageCode = languageCode,
-            AvailableLanguages = await _languages.GetActiveAsync(ct)
+            PrimaryLanguageCode = primaryLanguageCode,
+            AvailableLanguages = activeLanguages
         };
 
-        Dictionary<int, string?> values = new();
+        // Shared (is_localized=false) field values, same regardless of language. Localized values
+        // keyed by language — every active language is loaded up front (not just the primary one)
+        // so the client-side tabs (content-item-tabs.js) never need to reload the page to switch.
+        Dictionary<int, string?> sharedValues = new();
+        Dictionary<string, Dictionary<int, string?>> localizedValues = new();
         Dictionary<int, List<RelatedItemDto>> relations = new();
+
         if (itemId is int id)
         {
-            var edit = await _items.GetForEditAsync(id, languageCode, ct);
-            if (!edit.IsSuccess) return null;
-            // Guard: the item must belong to the content type this form was opened for (route
-            // contentTypeId, already permission-checked). Prevents reading another type's item values
-            // by crafting /admin/content-types/{A}/items/{B_item_id}/edit.
-            if (edit.Value!.ContentTypeId != contentTypeId) return null;
-            vm.ItemId = edit.Value!.Id;
-            vm.Status = edit.Value.Status;
-            vm.Slug = edit.Value.Slug;
-            vm.Title = edit.Value.Title;
-            vm.IsLanguageActive = edit.Value.IsLanguageActive;
-            values = edit.Value.Values;
-            relations = edit.Value.Relations;
+            var editByLang = new Dictionary<string, ContentItemEditDto>();
+            foreach (var lang in languageCodes)
+            {
+                var edit = await _items.GetForEditAsync(id, lang, ct);
+                if (!edit.IsSuccess) return null;
+                // Guard: the item must belong to the content type this form was opened for (route
+                // contentTypeId, already permission-checked). Prevents reading another type's item
+                // values by crafting /admin/content-types/{A}/items/{B_item_id}/edit.
+                if (edit.Value!.ContentTypeId != contentTypeId) return null;
+                editByLang[lang] = edit.Value;
+            }
+
+            var primaryEdit = editByLang[primaryLanguageCode];
+            vm.ItemId = primaryEdit.Id;
+            vm.Status = primaryEdit.Status;
+            vm.Slug = primaryEdit.Slug;
+            relations = primaryEdit.Relations;
+
+            // GetForEditAsync returns rows for language_code IN (@Lang, 'all') mixed together —
+            // split them back out by the owning field's IsLocalized flag.
+            foreach (var (fieldId, raw) in primaryEdit.Values)
+                if (fieldById.TryGetValue(fieldId, out var f) && !f.IsLocalized)
+                    sharedValues[fieldId] = raw;
+
+            foreach (var lang in languageCodes)
+            {
+                vm.Titles[lang] = editByLang[lang].Title;
+                vm.LanguageActive[lang] = editByLang[lang].IsLanguageActive;
+
+                var perLang = new Dictionary<int, string?>();
+                foreach (var (fieldId, raw) in editByLang[lang].Values)
+                    if (fieldById.TryGetValue(fieldId, out var f) && f.IsLocalized)
+                        perLang[fieldId] = raw;
+                localizedValues[lang] = perLang;
+            }
         }
 
-        vm.Values = values;
+        vm.Values = sharedValues;
 
-        // Pre-resolve media for media fields in one batch (the field-mapping below is synchronous).
-        var mediaIdsByField = new Dictionary<int, List<int>>();
+        // Pre-resolve media for media fields in one batch (shared + every language's localized ids).
+        var sharedMediaIdsByField = new Dictionary<int, List<int>>();
+        var localizedMediaIdsByField = new Dictionary<int, Dictionary<string, List<int>>>();
         foreach (var f in fields.Value!)
-            if (IsMedia(f.FieldType))
+        {
+            if (!IsMedia(f.FieldType)) continue;
+            if (f.IsLocalized)
             {
-                var ids = ParseMediaIds(f.FieldType, values.TryGetValue(f.Id, out var rv) ? rv : null);
-                if (ids.Count > 0) mediaIdsByField[f.Id] = ids;
+                var perLang = new Dictionary<string, List<int>>();
+                foreach (var lang in languageCodes)
+                {
+                    var raw = localizedValues.TryGetValue(lang, out var lv) && lv.TryGetValue(f.Id, out var rv) ? rv : null;
+                    var ids = ParseMediaIds(f.FieldType, raw);
+                    if (ids.Count > 0) perLang[lang] = ids;
+                }
+                if (perLang.Count > 0) localizedMediaIdsByField[f.Id] = perLang;
             }
-        var mediaById = (await _media.GetByIdsAsync(
-            mediaIdsByField.Values.SelectMany(x => x).Distinct().ToList(), ct)).ToDictionary(m => m.Id);
+            else
+            {
+                var ids = ParseMediaIds(f.FieldType, sharedValues.TryGetValue(f.Id, out var rv) ? rv : null);
+                if (ids.Count > 0) sharedMediaIdsByField[f.Id] = ids;
+            }
+        }
+        var allMediaIds = sharedMediaIdsByField.Values.SelectMany(x => x)
+            .Concat(localizedMediaIdsByField.Values.SelectMany(d => d.Values.SelectMany(x => x)))
+            .Distinct().ToList();
+        var mediaById = (await _media.GetByIdsAsync(allMediaIds, ct)).ToDictionary(m => m.Id);
 
         vm.Fields = fields.Value!.Select(f =>
         {
@@ -114,9 +166,15 @@ public class ContentItemFormFactory
                 IsRequired = f.IsRequired,
                 IsLocalized = f.IsLocalized,
                 OptionsJson = f.OptionsJson,
-                Value = values.TryGetValue(f.Id, out var v) ? v : null,
-                LanguageCode = languageCode
+                LanguageCode = primaryLanguageCode
             };
+
+            if (f.IsLocalized)
+                model.ValuesByLang = languageCodes.ToDictionary(
+                    lang => lang,
+                    lang => localizedValues.TryGetValue(lang, out var lv) && lv.TryGetValue(f.Id, out var v) ? v : null);
+            else
+                model.Value = sharedValues.TryGetValue(f.Id, out var v) ? v : null;
 
             if (f.FieldType is FieldType.Relation or FieldType.MultiRelation)
             {
@@ -133,8 +191,18 @@ public class ContentItemFormFactory
             {
                 model.MediaMultiple = f.FieldType == FieldType.Gallery;
                 model.MediaTypeFilter = MediaTypeFilter(f.FieldType);
-                if (mediaIdsByField.TryGetValue(f.Id, out var ids))
-                    model.SelectedMedia = ids.Where(mediaById.ContainsKey).Select(id => mediaById[id]).ToList();
+                if (f.IsLocalized)
+                {
+                    model.SelectedMediaByLang = languageCodes.ToDictionary(
+                        lang => lang,
+                        lang => localizedMediaIdsByField.TryGetValue(f.Id, out var perLang) && perLang.TryGetValue(lang, out var ids)
+                            ? ids.Where(mediaById.ContainsKey).Select(mid => mediaById[mid]).ToList()
+                            : new List<MediaAssetDto>());
+                }
+                else if (sharedMediaIdsByField.TryGetValue(f.Id, out var sids))
+                {
+                    model.SelectedMedia = sids.Where(mediaById.ContainsKey).Select(mid => mediaById[mid]).ToList();
+                }
                 var mo = MediaOptions.Parse(f.OptionsJson);
                 model.MediaMaxSizeMb = mo.MaxSizeMb;
                 model.MediaAllowedFormats = mo.AllowedFormats;

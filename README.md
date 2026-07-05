@@ -3,7 +3,7 @@
 **Multi-tenant, multilingual headless Content Management System**  
 Built with ASP.NET Core 8 · Dapper · SQL Server · Docker
 
-> **v1.4.1** — Production-ready. Fixes a 2FA verify-code crash on IIS (localization format-arg mismatch) and persists the DataProtection key ring on IIS/Plesk hosting. See [CHANGELOG](CHANGELOG.md).
+> **v1.4.2** — Production-ready. Content-item language tabs are now genuinely client-side (no more lost input on tab switch); post-v1.3.0 security review found no new issues. See [CHANGELOG](CHANGELOG.md).
 
 ---
 

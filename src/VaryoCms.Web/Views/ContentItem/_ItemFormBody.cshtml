@@ -1,9 +1,10 @@
 @model ContentItemFormViewModel
 @{
-    var action = Model.ItemId == 0 ? "Create" : "Edit";
     var languages = Model.AvailableLanguages.Count > 0
         ? Model.AvailableLanguages.Select(l => (Code: l.Code, Name: l.Name)).ToList()
-        : new List<(string Code, string Name)> { (Model.LanguageCode, Model.LanguageCode.ToUpper()) };
+        : new List<(string Code, string Name)> { (Model.PrimaryLanguageCode, Model.PrimaryLanguageCode.ToUpper()) };
+    var sharedFields = Model.Fields.Where(f => !f.IsLocalized).ToList();
+    var localizedFields = Model.Fields.Where(f => f.IsLocalized).ToList();
 }
 
 @if (TempData["Error"] is string err)
@@ -16,32 +17,10 @@
     <span>@L["ContentItem.PublishHint"]</span>
 </div>
 
-@* Language tabs + per-language activation toggle grouped together *@
-<div class="d-flex align-items-center gap-2 mb-1">
-    <span class="cms-label mb-0">@L["ContentItem.Language"]</span>
-    <div class="cms-tabs">
-        @foreach (var lng in languages)
-        {
-            <a class="cms-tab @(lng.Code == Model.LanguageCode ? "active" : "")" title="@lng.Name"
-               asp-action="@action" asp-route-contentTypeId="@Model.ContentTypeId"
-               asp-route-id="@(Model.ItemId == 0 ? (int?)null : Model.ItemId)" asp-route-lang="@lng.Code">@lng.Code.ToUpper()</a>
-        }
-    </div>
-    <div class="form-check mb-0 ms-2">
-        <input asp-for="IsLanguageActive" class="form-check-input" type="checkbox" />
-        <label asp-for="IsLanguageActive" class="form-check-label fw-medium">@L["ContentItem.LangActive"]</label>
-    </div>
-</div>
-<small class="d-block text-muted mb-3" style="font-size:.8em">@L["ContentItem.LangActive.Hint"]</small>
+<input type="hidden" asp-for="PrimaryLanguageCode" />
 
-<input type="hidden" asp-for="LanguageCode" />
-
-<div class="cms-form-group">
-    <label asp-for="Title" class="cms-label">@L["ContentItem.Title"] <span class="text-danger">*</span></label>
-    <input asp-for="Title" class="form-control title-source" autocomplete="off"
-           placeholder="@L["ContentItem.TitlePlaceholder"]" />
-</div>
-
+@* Shared fields: Status/Slug + any is_localized=false content field — same regardless of which
+   language tab is active, rendered exactly once. *@
 <div class="row">
     <div class="col-md-6 cms-form-group">
         <label asp-for="Status" class="cms-label">@L["Common.Status"]</label>
@@ -58,16 +37,58 @@
     </div>
 </div>
 
+@foreach (var field in sharedFields)
+{
+    <partial name="_FieldInput" model="field" />
+}
+
 <hr class="cms-divider" />
 
-@if (Model.Fields.Count == 0)
+@* Language tabs — client-side only (content-item-tabs.js): switching never reloads the page, so
+   unsaved input in the outgoing language is never lost. Hidden when there's only one language. *@
+@if (languages.Count > 1)
 {
-    <div class="cms-alert-info"><i class="bi bi-info-circle-fill"></i><span>@L["ContentItem.NoFields"]</span></div>
+    <div class="cms-tabs mb-3">
+        @foreach (var lng in languages)
+        {
+            <button type="button" class="cms-tab @(lng.Code == Model.PrimaryLanguageCode ? "active" : "")"
+                    title="@lng.Name" data-lang-tab="@lng.Code">@lng.Code.ToUpper()</button>
+        }
+    </div>
 }
-else
+
+@foreach (var lng in languages)
 {
-    foreach (var field in Model.Fields)
-    {
-        <partial name="_FieldInput" model="field" />
-    }
+    var isPrimary = lng.Code == Model.PrimaryLanguageCode;
+    <div data-lang-panel="@lng.Code" class="@(isPrimary ? "" : "d-none")">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <div class="form-check mb-0">
+                <input type="checkbox" class="form-check-input" id="langActive_@lng.Code"
+                       name="LanguageActive[@lng.Code]" value="true"
+                       @(Model.LanguageActive.GetValueOrDefault(lng.Code) ? "checked" : null) />
+                <label class="form-check-label fw-medium" for="langActive_@lng.Code">@L["ContentItem.LangActive"]</label>
+            </div>
+        </div>
+        <small class="d-block text-muted mb-3" style="font-size:.8em">@L["ContentItem.LangActive.Hint"]</small>
+
+        <div class="cms-form-group">
+            <label for="title_@lng.Code" class="cms-label">@L["ContentItem.Title"] <span class="text-danger">*</span></label>
+            <input id="title_@lng.Code" name="Titles[@lng.Code]"
+                   class="form-control @(isPrimary ? "title-source" : "")" autocomplete="off"
+                   value="@Model.Titles.GetValueOrDefault(lng.Code)"
+                   placeholder="@L["ContentItem.TitlePlaceholder"]" />
+        </div>
+
+        @if (localizedFields.Count == 0 && sharedFields.Count == 0)
+        {
+            <div class="cms-alert-info"><i class="bi bi-info-circle-fill"></i><span>@L["ContentItem.NoFields"]</span></div>
+        }
+        else
+        {
+            foreach (var field in localizedFields)
+            {
+                <partial name="_FieldInput" model="field" view-data="@(new ViewDataDictionary(ViewData) { ["Lang"] = lng.Code })" />
+            }
+        }
+    </div>
 }

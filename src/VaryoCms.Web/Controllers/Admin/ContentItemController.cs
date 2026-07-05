@@ -16,18 +16,20 @@ public class ContentItemController : Controller
     private readonly IContentItemService _items;
     private readonly IContentTypeService _types;
     private readonly ContentItemFormFactory _formFactory;
+    private readonly ContentItemSaveCoordinator _saveCoordinator;
     private readonly ILanguageContext _language;
     private readonly IPermissionService _permissions;
     private readonly ILanguageService _languages;
 
     public ContentItemController(
         IContentItemService items, IContentTypeService types,
-        ContentItemFormFactory formFactory, ILanguageContext language,
+        ContentItemFormFactory formFactory, ContentItemSaveCoordinator saveCoordinator, ILanguageContext language,
         IPermissionService permissions, ILanguageService languages)
     {
         _items = items;
         _types = types;
         _formFactory = formFactory;
+        _saveCoordinator = saveCoordinator;
         _language = language;
         _permissions = permissions;
         _languages = languages;
@@ -65,7 +67,8 @@ public class ContentItemController : Controller
     [RequireContentTypePermission(ContentPermission.Update)]
     public async Task<IActionResult> SetRead(int contentTypeId, int id, bool isRead, CancellationToken ct)
     {
-        await _items.SetReadAsync(contentTypeId, id, isRead, ct);
+        var result = await _items.SetReadAsync(contentTypeId, id, isRead, ct);
+        if (!result.IsSuccess) TempData["Error"] = result.Error;
         return RedirectToAction(nameof(Index), new { contentTypeId });
     }
 
@@ -93,11 +96,14 @@ public class ContentItemController : Controller
     public async Task<IActionResult> Create(int contentTypeId, ContentItemFormViewModel vm, CancellationToken ct)
     {
         vm.ContentTypeId = contentTypeId;
-        var result = await _items.CreateAsync(vm.ToSaveRequest(), ct);
+        var result = await _saveCoordinator.CreateNewAsync(vm, ct);
         if (result.IsSuccess) return RedirectToAction(nameof(Index), new { contentTypeId });
 
-        TempData["Error"] = result.Error;
-        var rebuilt = await _formFactory.BuildAsync(contentTypeId, null, vm.LanguageCode, ct);
+        TempData["Error"] = FormatLanguageError(result);
+        if (result.ItemPersisted)
+            return RedirectToAction(nameof(Edit), new { contentTypeId, id = result.ItemId, lang = result.FailedLanguage });
+
+        var rebuilt = await _formFactory.BuildAsync(contentTypeId, null, vm.PrimaryLanguageCode, ct);
         return rebuilt is null ? NotFound() : View(Merge(rebuilt, vm));
     }
 
@@ -115,13 +121,16 @@ public class ContentItemController : Controller
     public async Task<IActionResult> Edit(int contentTypeId, int id, ContentItemFormViewModel vm, CancellationToken ct)
     {
         vm.ContentTypeId = contentTypeId;
-        var result = await _items.UpdateAsync(id, vm.ToSaveRequest(), ct);
+        var result = await _saveCoordinator.SaveExistingAsync(id, vm, ct);
         if (result.IsSuccess) return RedirectToAction(nameof(Index), new { contentTypeId });
 
-        TempData["Error"] = result.Error;
-        var rebuilt = await _formFactory.BuildAsync(contentTypeId, id, vm.LanguageCode, ct);
+        TempData["Error"] = FormatLanguageError(result);
+        var rebuilt = await _formFactory.BuildAsync(contentTypeId, id, result.FailedLanguage ?? vm.PrimaryLanguageCode, ct);
         return rebuilt is null ? NotFound() : View(Merge(rebuilt, vm));
     }
+
+    private static string FormatLanguageError(ContentItemSaveResult result) =>
+        result.FailedLanguage is null ? result.Error ?? "" : $"[{result.FailedLanguage.ToUpper()}] {result.Error}";
 
     [HttpPost("{id:int}/delete")]
     [ValidateAntiForgeryToken]
@@ -132,14 +141,28 @@ public class ContentItemController : Controller
         return RedirectToAction(nameof(Index), new { contentTypeId });
     }
 
+    // Re-applies what the user just posted onto the freshly-rebuilt (from DB) view model, so a
+    // validation failure re-renders exactly what they typed instead of stale/blank values —
+    // across every language panel, not just the one that failed.
     private static ContentItemFormViewModel Merge(ContentItemFormViewModel rebuilt, ContentItemFormViewModel posted)
     {
         rebuilt.Status = posted.Status;
         rebuilt.Slug = posted.Slug;
-        rebuilt.Title = posted.Title;
-        rebuilt.IsLanguageActive = posted.IsLanguageActive;
+        rebuilt.Titles = posted.Titles;
+        rebuilt.LanguageActive = posted.LanguageActive;
         foreach (var f in rebuilt.Fields)
-            f.Value = posted.Values.TryGetValue(f.Id, out var v) ? v : f.Value;
+        {
+            if (f.IsLocalized)
+            {
+                foreach (var lang in f.ValuesByLang.Keys.ToList())
+                    if (posted.LocalizedValues.TryGetValue(lang, out var vals) && vals.TryGetValue(f.Id, out var v))
+                        f.ValuesByLang[lang] = v;
+            }
+            else
+            {
+                f.Value = posted.Values.TryGetValue(f.Id, out var v) ? v : f.Value;
+            }
+        }
         return rebuilt;
     }
 }
