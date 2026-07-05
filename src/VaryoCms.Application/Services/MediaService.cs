@@ -132,7 +132,10 @@ public class MediaService : IMediaService
         }
 
         string oldPath = asset.FilePath;
-        var stored = await _storage.SaveAsync(new MemoryStream(cropped.Bytes), asset.OriginalName, _tenant.TenantId, ct);
+        // Pass the asset's validated MIME so the storage layer resolves a server-controlled extension.
+        // Omitting it hits the null-MIME overload, which throws (crop then 500s) — the extension must
+        // never come from the user filename (v1.3.0 upload-XSS fix).
+        var stored = await _storage.SaveAsync(new MemoryStream(cropped.Bytes), asset.OriginalName, _tenant.TenantId, asset.MimeType, ct);
         await _repository.UpdateFileAsync(id, stored.FileName, stored.RelativePath, cropped.Width, cropped.Height, stored.SizeBytes, ct);
         await _storage.DeleteAsync(oldPath, ct);   // remove the pre-crop file
 

@@ -3,7 +3,7 @@
 **Multi-tenant, multilingual headless Content Management System**  
 Built with ASP.NET Core 8 · Dapper · SQL Server · Docker
 
-> **v1.4.2** — Production-ready. Content-item language tabs are now genuinely client-side (no more lost input on tab switch); post-v1.3.0 security review found no new issues. See [CHANGELOG](CHANGELOG.md).
+> **v1.4.3** — Production-ready. Full-solution security re-audit: 2FA codes now hashed at rest, plus defense-in-depth tenant-scoping and a media-crop fix. See [CHANGELOG](CHANGELOG.md).
 
 ---
 

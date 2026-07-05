@@ -67,11 +67,16 @@ public class DictionaryRepository : BaseRepository, IDictionaryRepository
         int entryId, CancellationToken ct = default)
     {
         using var conn = CreateConnection();
+        // dictionary_translations has no tenant_id column — scope it through the tenant-owned parent
+        // (defense-in-depth mirroring the EAV content_field_values pattern), so a cross-tenant entryId
+        // can never leak another tenant's translation values even if a caller skips the ownership check.
         var command = new CommandDefinition(
-            @"SELECT id, entry_id, language_code, value
-              FROM dictionary_translations
-              WHERE entry_id = @EntryId",
-            new { EntryId = entryId },
+            @"SELECT dt.id, dt.entry_id, dt.language_code, dt.value
+              FROM dictionary_translations dt
+              WHERE dt.entry_id = @EntryId
+                AND EXISTS (SELECT 1 FROM dictionary_entries de
+                            WHERE de.id = dt.entry_id AND de.tenant_id = @TenantId AND de.is_deleted = 0)",
+            new { EntryId = entryId, TenantId = _tenantContext.TenantId },
             cancellationToken: ct);
         var rows = await conn.QueryAsync<DictionaryTranslation>(command);
         return rows.AsList();
@@ -84,11 +89,13 @@ public class DictionaryRepository : BaseRepository, IDictionaryRepository
 
         using var conn = CreateConnection();
         var command = new CommandDefinition(
-            @"SELECT entry_id AS EntryId, COUNT(1) AS Cnt
-              FROM dictionary_translations
-              WHERE entry_id IN @Ids AND value IS NOT NULL AND LEN(LTRIM(RTRIM(value))) > 0
-              GROUP BY entry_id",
-            new { Ids = entryIds },
+            @"SELECT dt.entry_id AS EntryId, COUNT(1) AS Cnt
+              FROM dictionary_translations dt
+              WHERE dt.entry_id IN @Ids AND dt.value IS NOT NULL AND LEN(LTRIM(RTRIM(dt.value))) > 0
+                AND EXISTS (SELECT 1 FROM dictionary_entries de
+                            WHERE de.id = dt.entry_id AND de.tenant_id = @TenantId AND de.is_deleted = 0)
+              GROUP BY dt.entry_id",
+            new { Ids = entryIds, TenantId = _tenantContext.TenantId },
             cancellationToken: ct);
         var rows = await conn.QueryAsync<(int EntryId, int Cnt)>(command);
         return rows.ToDictionary(r => r.EntryId, r => r.Cnt);
@@ -149,6 +156,16 @@ public class DictionaryRepository : BaseRepository, IDictionaryRepository
         using var conn = (DbConnection)CreateConnection();
         await conn.OpenAsync(ct);
         using var tx = await conn.BeginTransactionAsync(ct);
+
+        // Defense-in-depth: refuse to write translations for an entry outside the current tenant,
+        // even if an upstream caller forgot the ownership check. dictionary_translations has no
+        // tenant_id, so verify via the tenant-owned parent before any DELETE/MERGE.
+        int owned = await conn.ExecuteScalarAsync<int>(new CommandDefinition(
+            @"SELECT COUNT(1) FROM dictionary_entries
+              WHERE id = @EntryId AND tenant_id = @TenantId AND is_deleted = 0",
+            new { EntryId = entryId, TenantId = _tenantContext.TenantId },
+            transaction: tx, cancellationToken: ct));
+        if (owned == 0) { await tx.RollbackAsync(ct); return; }
 
         foreach (var (langRaw, valueRaw) in translations)
         {

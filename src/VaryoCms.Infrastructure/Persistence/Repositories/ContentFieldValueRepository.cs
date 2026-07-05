@@ -44,8 +44,9 @@ public class ContentFieldValueRepository : BaseRepository, IContentFieldValueRep
         {
             var command = new CommandDefinition(
                 @"MERGE content_field_values AS t
-                  USING (SELECT @ItemId AS content_item_id, @FieldId AS content_field_id, @Lang AS language_code) AS s
-                  ON t.content_item_id = s.content_item_id
+                  USING (SELECT @TenantId AS tenant_id, @ItemId AS content_item_id, @FieldId AS content_field_id, @Lang AS language_code) AS s
+                  ON t.tenant_id = s.tenant_id
+                     AND t.content_item_id = s.content_item_id
                      AND t.content_field_id = s.content_field_id
                      AND t.language_code = s.language_code
                   WHEN MATCHED THEN UPDATE SET

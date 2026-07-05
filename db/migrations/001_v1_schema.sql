@@ -522,7 +522,7 @@ CREATE TABLE login_codes (
     email       NVARCHAR(256) NOT NULL,
     tenant_type NVARCHAR(20)  NOT NULL,  -- 'tenant' | 'system'
     tenant_id   INT           NULL,       -- NULL for system admins
-    code        NVARCHAR(10)  NOT NULL,
+    code        NVARCHAR(10)  NOT NULL,   -- widened to NVARCHAR(100) by migration 006 (hashed codes)
     attempts    INT           NOT NULL DEFAULT 0,
     expires_at  DATETIME2     NOT NULL,
     used_at     DATETIME2     NULL,

@@ -13,6 +13,10 @@ public class LoginCodeServiceTests
     private readonly ITenantEmailSettingsRepository _tenantEmail = Substitute.For<ITenantEmailSettingsRepository>();
     private readonly IEmailSender _emailSender = Substitute.For<IEmailSender>();
 
+    // Login codes are stored hashed at rest; the fake hasher mirrors that with a trivial reversible
+    // transform so tests can assert stored != plaintext without pulling in BCrypt's cost.
+    private readonly IPasswordHasher _hasher = Substitute.For<IPasswordHasher>();
+
     private readonly EmailVerificationSettings _settings = new()
     {
         Enabled = true,
@@ -23,15 +27,24 @@ public class LoginCodeServiceTests
         FromAddress = "no-reply@test.local"
     };
 
-    private LoginCodeService Sut() => new(_repo, _tenantEmail, _emailSender, _settings);
+    public LoginCodeServiceTests()
+    {
+        // Fake hasher: Hash prefixes "H:"; Verify checks the plaintext matches after stripping it.
+        _hasher.Hash(Arg.Any<string>()).Returns(ci => "H:" + ci.Arg<string>());
+        _hasher.Verify(Arg.Any<string>(), Arg.Any<string>())
+               .Returns(ci => "H:" + ci.ArgAt<string>(0) == ci.ArgAt<string>(1));
+    }
 
+    private LoginCodeService Sut() => new(_repo, _tenantEmail, _emailSender, _hasher, _settings);
+
+    // Code is stored HASHED at rest — mirror that so Verify (hasher-based) matches.
     private LoginCode ActiveCode(string code = "123456", int attempts = 0) => new()
     {
         Id = 1,
         Email = "user@test.com",
         TenantType = "tenant",
         TenantId = 1,
-        Code = code,
+        Code = "H:" + code,
         Attempts = attempts,
         ExpiresAt = DateTime.UtcNow.AddMinutes(5),
         CreatedAt = DateTime.UtcNow
@@ -43,7 +56,7 @@ public class LoginCodeServiceTests
         Assert.True(Sut().IsSystemEnabled);
 
         var disabledSettings = new EmailVerificationSettings { Enabled = false };
-        var sut = new LoginCodeService(_repo, _tenantEmail, _emailSender, disabledSettings);
+        var sut = new LoginCodeService(_repo, _tenantEmail, _emailSender, _hasher, disabledSettings);
         Assert.False(sut.IsSystemEnabled);
     }
 
@@ -77,9 +90,10 @@ public class LoginCodeServiceTests
     {
         await Sut().SendCodeAsync("user@test.com", "tenant", 1);
 
+        // The stored value must be the HASH (fake hasher prefixes "H:"), never the raw 6-digit code.
         await _repo.Received(1).UpsertAsync(
             "user@test.com", "tenant", 1,
-            Arg.Is<string>(code => code.Length == 6),
+            Arg.Is<string>(stored => stored.StartsWith("H:") && stored.Length == 8),
             Arg.Any<DateTime>(),
             Arg.Any<CancellationToken>());
 

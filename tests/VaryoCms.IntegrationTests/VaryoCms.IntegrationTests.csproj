@@ -35,6 +35,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>migrations\005_inbox_and_notify.sql</Link>
     </Content>
+    <Content Include="..\..\db\migrations\006_widen_login_code_hash.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>migrations\006_widen_login_code_hash.sql</Link>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

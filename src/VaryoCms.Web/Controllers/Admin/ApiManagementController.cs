@@ -33,6 +33,7 @@ public class ApiManagementController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Configure(int contentTypeId, ApiConfigFormViewModel vm, CancellationToken ct)
     {
+        vm.ContentTypeId = contentTypeId;   // bind the config to the route, not a form-posted id
         if (ModelState.IsValid)
         {
             var result = await _service.SaveAsync(vm.ToRequest(), ct);

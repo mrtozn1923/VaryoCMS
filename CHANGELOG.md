@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.3] - 2026-07-06
+
+### Security
+Full-solution re-audit (22 controllers, 25 repositories, 66 views) with automated sweeps (`dotnet list package --vulnerable` clean; SQL-interpolation / tenant_id-coverage / antiforgery / AllowAnonymous / hardcoded-secret greps) plus three parallel manual reviews (tenant-isolation+SQLi, authz+IDOR+CSRF, XSS+upload+credential). No SQL injection, no cross-tenant IDOR, no XSS, no CSRF gaps; v1.3.0 upload hardening (server-derived extension from MIME allow-map, no SVG, `/uploads` CSP sandbox), JWT HS256 pinning, and BCrypt work-factor 12 all confirmed intact. Fixed:
+
+- **2FA login codes now hashed at rest (Medium)**: `LoginCodeService` stored and compared the 6-digit verification code in **plaintext** in `login_codes.code`. A DB read (leaked backup, insider, or SQLi elsewhere) exposed usable codes. Codes are now BCrypt-hashed via the existing `IPasswordHasher` on write and checked with `Verify` on read (expiry + max-attempts were already enforced). Migration `006_widen_login_code_hash.sql` widens `login_codes.code` from `NVARCHAR(10)` to `NVARCHAR(100)` to hold the hash (additive, idempotent; test projects copy it).
+- **`content_field_values` MERGE now matches on `tenant_id` (defense-in-depth)**: `ContentFieldValueRepository.SaveValuesAsync`'s MERGE `ON` clause omitted `tenant_id` (the INSERT stamped it and callers pre-validate item ownership, so not exploitable). Added to the match predicate, mirroring `ContentItemTitleRepository`.
+- **`dictionary_translations` now tenant-scoped through its parent (defense-in-depth)**: `DictionaryRepository`'s three translation methods (`GetTranslationsAsync`, `GetTranslatedCountsAsync`, `SaveTranslationsAsync`) touched the child table by `entry_id` only. Callers already validate ownership via the tenant-scoped `GetByIdAsync`, so not exploitable — but the reads now `EXISTS`-join `dictionary_entries` on `tenant_id`, and the write refuses an entry outside the current tenant, mirroring the EAV `content_field_values` pattern.
+
+### Fixed
+- **Media crop was broken (500)**: `MediaService.CropAsync` called the MIME-less `SaveAsync` overload, so the storage layer (which resolves the file extension only from a validated MIME, never the user filename) threw and crop 500'd. Now passes the asset's `MimeType`.
+- **`ApiManagementController.Configure` binds to the route content type**: the save used the form-posted `ContentTypeId` instead of the route value (tenant-scoped + TenantAdmin-only, so no cross-tenant impact) — now forced to the route `{contentTypeId}`, matching the other admin controllers.
+
+> Accepted/not-fixed (noted for the record): `ContentFieldController` Edit/Delete don't cross-check the route `{contentTypeId}` against the field's owning type — cosmetic only, since the controller is TenantAdmin/SystemAdmin-only and a TenantAdmin already has full access to every content type in their own tenant (repo stays tenant-scoped). JWT remains non-revocable by design (documented in v1.3.0; use an ApiKey credential where revocation is required).
+
 ## [1.4.2] - 2026-07-05
 
 ### Fixed

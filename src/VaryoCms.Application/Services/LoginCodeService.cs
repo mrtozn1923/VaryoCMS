@@ -10,17 +10,20 @@ public class LoginCodeService : ILoginCodeService
     private readonly ILoginCodeRepository _repo;
     private readonly ITenantEmailSettingsRepository _tenantEmailSettings;
     private readonly IEmailSender _email;
+    private readonly IPasswordHasher _hasher;
     private readonly EmailVerificationSettings _systemSettings;
 
     public LoginCodeService(
         ILoginCodeRepository repo,
         ITenantEmailSettingsRepository tenantEmailSettings,
         IEmailSender email,
+        IPasswordHasher hasher,
         EmailVerificationSettings systemSettings)
     {
         _repo = repo;
         _tenantEmailSettings = tenantEmailSettings;
         _email = email;
+        _hasher = hasher;
         _systemSettings = systemSettings;
     }
 
@@ -48,7 +51,9 @@ public class LoginCodeService : ILoginCodeService
         string code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         DateTime expiresAt = DateTime.UtcNow.AddMinutes(settings.CodeExpiryMinutes);
 
-        await _repo.UpsertAsync(email, tenantType, tenantId, code, expiresAt, ct);
+        // Store the code HASHED at rest (BCrypt) — a DB read (leaked backup, SQLi elsewhere, insider)
+        // must not expose usable login codes. The plaintext is only ever emailed to the user.
+        await _repo.UpsertAsync(email, tenantType, tenantId, _hasher.Hash(code), expiresAt, ct);
         await _email.SendAsync(email, "Varyo CMS — Giriş Doğrulama", BuildEmailHtml(code, settings.CodeExpiryMinutes), settings, ct);
     }
 
@@ -72,7 +77,7 @@ public class LoginCodeService : ILoginCodeService
             return Result.Failure("MaxAttemptsExceeded");
         }
 
-        if (record.Code != code.Trim())
+        if (!_hasher.Verify(code.Trim(), record.Code))
         {
             await _repo.IncrementAttemptsAsync(record.Id, ct);
             int remaining = maxAttempts - record.Attempts - 1;
