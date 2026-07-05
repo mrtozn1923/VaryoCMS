@@ -8,6 +8,7 @@ public class VerifyCodeViewModel
     public string Email { get; set; } = "";
     public string? ReturnUrl { get; set; }
     public bool RememberMe { get; set; }
+    public int ExpiryMinutes { get; set; }
 
     [Required]
     [StringLength(6, MinimumLength = 6)]

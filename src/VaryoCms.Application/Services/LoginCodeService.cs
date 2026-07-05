@@ -32,6 +32,13 @@ public class LoginCodeService : ILoginCodeService
         return settings?.EmailVerificationEnabled ?? false;
     }
 
+    public async Task<int> GetExpiryMinutesAsync(string tenantType, int? tenantId, CancellationToken ct = default)
+    {
+        if (tenantType == "system") return _systemSettings.CodeExpiryMinutes;
+        var ts = tenantId.HasValue ? await _tenantEmailSettings.GetByTenantIdAsync(tenantId.Value, ct) : null;
+        return ts?.CodeExpiryMinutes ?? _systemSettings.CodeExpiryMinutes;
+    }
+
     public async Task SendCodeAsync(string email, string tenantType, int? tenantId, CancellationToken ct = default)
     {
         EmailVerificationSettings settings = tenantType == "system"

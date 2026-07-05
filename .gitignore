@@ -3,6 +3,10 @@ bin/
 obj/
 [Bb]uild/
 out/
+publish/
+
+# ASP.NET Core DataProtection key ring (per-environment, never share across envs)
+src/VaryoCms.Web/dp-keys/
 
 # .NET / Rider / VS
 .vs/

@@ -60,14 +60,15 @@ public class SystemAccountController : Controller
     }
 
     [AllowAnonymous] [HttpGet("verify-code")]
-    public IActionResult VerifyCode()
+    public async Task<IActionResult> VerifyCode(CancellationToken ct)
     {
         if (TempData["PendingEmail"] is not string email) return RedirectToAction(nameof(Login));
         return View(new VerifyCodeViewModel
         {
             Email = email,
             RememberMe = TempData["RememberMe"] is bool r && r,
-            ReturnUrl = TempData["ReturnUrl"] as string
+            ReturnUrl = TempData["ReturnUrl"] as string,
+            ExpiryMinutes = await _loginCode.GetExpiryMinutesAsync("system", null, ct)
         });
     }
 

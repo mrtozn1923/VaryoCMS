@@ -3,7 +3,7 @@
 **Multi-tenant, multilingual headless Content Management System**  
 Built with ASP.NET Core 8 · Dapper · SQL Server · Docker
 
-> **v1.4.0** — Production-ready. Submission inbox (read/unread + email notification for form-submission content types) and an atomic public-API view-count increment endpoint. Full security audit pass in v1.3.0. See [CHANGELOG](CHANGELOG.md).
+> **v1.4.1** — Production-ready. Fixes a 2FA verify-code crash on IIS (localization format-arg mismatch) and persists the DataProtection key ring on IIS/Plesk hosting. See [CHANGELOG](CHANGELOG.md).
 
 ---
 

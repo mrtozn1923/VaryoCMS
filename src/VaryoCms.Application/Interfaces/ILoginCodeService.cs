@@ -10,6 +10,9 @@ public interface ILoginCodeService
     // DB'den — Tenant girişi için per-tenant kontrol.
     Task<bool> IsTenantEnabledAsync(int tenantId, CancellationToken ct = default);
 
+    // Configured code lifetime (system: appsettings; tenant: tenant_email_settings, falls back to appsettings).
+    Task<int> GetExpiryMinutesAsync(string tenantType, int? tenantId, CancellationToken ct = default);
+
     // Generates a code, persists it, and emails it. Uses appsettings for system, DB for tenant.
     Task SendCodeAsync(string email, string tenantType, int? tenantId, CancellationToken ct = default);
 

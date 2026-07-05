@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.1] - 2026-07-05
+
+### Fixed
+- **2FA verify-code page crashed on production (IIS)**: `Login.VerifyCode.ExpiryHint` UI translation contains a `{0}` placeholder, but `Views/Account/VerifyCode.cshtml` and `Views/System/SystemAccount/VerifyCode.cshtml` called `@L["Login.VerifyCode.ExpiryHint"]` with no format argument. `IHtmlLocalizer` always formats a `LocalizedHtmlString` via `HtmlFormattableString`, so a `{0}`-less-args mismatch throws `FormatException` — and since Razor defers `IHtmlContent` writes to the layout flush, the exception fired mid-response (after headers were already sent), producing a blank page / `ERR_HTTP2_PROTOCOL_ERROR` in the browser instead of a clean 500. Both views now pass the actual configured expiry (`ILoginCodeService.GetExpiryMinutesAsync`, new interface member) as the format argument, matching the value already used in the emailed code.
+- **DataProtection key ring ephemeral on IIS/Plesk**: `Program.cs` now calls `AddDataProtection().PersistKeysToFileSystem(...)` (keys under `ContentRootPath/dp-keys`) with a fixed application name. Without a user profile or HKLM registry (shared IIS hosting), keys were regenerated on every app-pool recycle, invalidating antiforgery tokens, TempData and auth cookies across restarts.
+
 ## [1.4.0] - 2026-07-03
 
 ### Added

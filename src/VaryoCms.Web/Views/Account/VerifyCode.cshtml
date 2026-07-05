@@ -27,7 +27,7 @@
                        maxlength="6" inputmode="numeric" pattern="\d{6}" autofocus
                        autocomplete="one-time-code" />
                 <span asp-validation-for="Code" class="text-danger small"></span>
-                <div class="cms-hint mt-1">@L["Login.VerifyCode.ExpiryHint"]</div>
+                <div class="cms-hint mt-1">@L["Login.VerifyCode.ExpiryHint", Model.ExpiryMinutes]</div>
             </div>
 
             <button type="submit" class="btn cms-btn-primary w-100 mb-2">

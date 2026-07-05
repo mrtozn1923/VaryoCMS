@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.DataProtection;
 using VaryoCms.Application;
 using VaryoCms.Application.Interfaces;
 using VaryoCms.Infrastructure;   // composition root ONLY — AddInfrastructure(); no Infrastructure types used elsewhere in Web
@@ -104,6 +105,12 @@ builder.Services.AddSingleton<IFileStorageService>(
     new VaryoCms.Infrastructure.Storage.LocalFileStorageService(
         builder.Environment.WebRootPath ?? Path.Combine(builder.Environment.ContentRootPath, "wwwroot"),
         "/uploads"));
+
+// DataProtection: on IIS/Plesk shared hosting the key ring is ephemeral (no user profile/HKLM),
+// which invalidates antiforgery, TempData and auth cookies on every app pool recycle. Persist to disk.
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "dp-keys")))
+    .SetApplicationName("VaryoCms");
 
 var app = builder.Build();
 
