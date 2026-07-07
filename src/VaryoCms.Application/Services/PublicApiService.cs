@@ -32,11 +32,12 @@ public class PublicApiService : IPublicApiService
     private readonly IResponseCache _cache;
     private readonly IAuditLogger _audit;
     private readonly ISubmissionNotifier _notifier;
+    private readonly MediaSettings _mediaSettings;
 
     public PublicApiService(
         ITenantStore tenantStore, IPublicApiRepository repo, IPublicApiWriteRepository writeRepo,
         IPasswordHasher passwordHasher, IJwtTokenService jwt, IResponseCache cache, IAuditLogger audit,
-        ISubmissionNotifier notifier)
+        ISubmissionNotifier notifier, MediaSettings mediaSettings)
     {
         _tenantStore = tenantStore;
         _repo = repo;
@@ -46,6 +47,7 @@ public class PublicApiService : IPublicApiService
         _cache = cache;
         _audit = audit;
         _notifier = notifier;
+        _mediaSettings = mediaSettings;
     }
 
     public async Task<Result<ApiListResponse>> GetListAsync(
@@ -387,7 +389,9 @@ public class PublicApiService : IPublicApiService
                 else if (v.ValueMediaId is int mid) ids.Add(mid);
             }
         }
-        return ids.Count == 0 ? new Dictionary<int, string>() : await _repo.GetMediaUrlsAsync(tenantId, ids.ToList(), ct);
+        if (ids.Count == 0) return new Dictionary<int, string>();
+        var urls = await _repo.GetMediaUrlsAsync(tenantId, ids.ToList(), ct);
+        return urls.ToDictionary(kv => kv.Key, kv => _mediaSettings.ToAbsolute(kv.Value)!);
     }
 
     private static object? ExpandMedia(FieldType type, ContentFieldValue? value, IReadOnlyDictionary<int, string> urls)

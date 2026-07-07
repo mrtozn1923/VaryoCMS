@@ -58,6 +58,9 @@
     // Working set for Gallery (not committed until Done is clicked).
     // Map<String(id), {id, url, mediaType, originalName}>
     let workingSet = new Map();
+    // Set only when the modal is opened via openForCallback (e.g. TinyMCE's file_picker_callback)
+    // instead of a .media-picker field — commitSingle() routes to this instead of writing chips.
+    let activeCallback = null;
 
     // ── Per-picker value helpers (operate on activePicker) ────────────────────────
     function ids() {
@@ -102,6 +105,13 @@
 
     // ── Commit helpers ─────────────────────────────────────────────────────────────
     function commitSingle(m) {
+        if (activeCallback) {
+            const cb = activeCallback;
+            activeCallback = null;
+            modal.hide();
+            cb(m);
+            return;
+        }
         // Clear existing chips.
         activePicker.querySelector('.mp-chips').innerHTML = '';
         addChip(m);
@@ -196,6 +206,7 @@
     // ── Open modal for a specific picker ───────────────────────────────────────────
     function openFor(picker) {
         activePicker    = picker;
+        activeCallback  = null;
         activeMultiple  = picker.dataset.multiple === 'true';
         activeMediaType = picker.dataset.mediaType || '';
         activeMaxMb     = picker.dataset.maxSizeMb ? parseFloat(picker.dataset.maxSizeMb) : null;
@@ -246,6 +257,64 @@
         doSearch();
         modal.show();
     }
+
+    // ── Stacking above TinyMCE's own dialog (opened via openForCallback below) ────
+    // TinyMCE's floating-UI root (.tox-tinymce-aux) is what actually needs to be outranked
+    // (see the CSS comment above #mediaPickerModal) — its z-index is a TinyMCE implementation
+    // detail we don't control and the CDN <script> tag floats on tinymce@7's latest minor/patch,
+    // so a hardcoded number can silently go stale again. Read the real, currently-applied
+    // z-index off the open TinyMCE dialog instead and boost above *that*, with the CSS values
+    // above only as a fallback if no such element is found (e.g. modal opened without TinyMCE).
+    function boostAboveTinyMce() {
+        let maxZ = 0;
+        document.querySelectorAll('.tox-tinymce-aux, .tox-dialog-wrap').forEach(function (el) {
+            const z = parseInt(window.getComputedStyle(el).zIndex, 10);
+            if (!isNaN(z) && z > maxZ) maxZ = z;
+        });
+        if (maxZ <= 0) {
+            modalEl.style.zIndex = '';
+            return;
+        }
+        modalEl.style.zIndex = String(maxZ + 100);
+        // Bootstrap (re)creates .modal-backdrop synchronously inside modal.show(), so it
+        // already exists in the DOM by the time this runs right after that call.
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        const lastBackdrop = backdrops[backdrops.length - 1];
+        if (lastBackdrop) lastBackdrop.style.zIndex = String(maxZ + 95);
+    }
+
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        modalEl.style.zIndex = '';
+    });
+
+    // ── Open modal for an external caller (e.g. TinyMCE file_picker_callback) ─────
+    // Single-select only — no .media-picker field is involved, so on selection
+    // commitSingle() calls opts.onSelect(media) instead of writing chips/hidden value.
+    function openForCallback(opts) {
+        activePicker    = null;
+        activeMultiple  = false;
+        activeMediaType = (opts && opts.mediaType) || '';
+        activeMaxMb     = null;
+        activeFormats   = [];
+        activeSearchUrl = (opts && opts.searchUrl) || '/admin/media/search';
+        activeCallback  = (opts && opts.onSelect) || null;
+        workingSet      = new Map();
+
+        mpmSearch.value = '';
+        mpmGrid.innerHTML = '';
+        mpmEmpty.style.display = 'none';
+        mpmFile.value = '';
+        clearStatus(mpmStatus);
+        if (mpmFieldHint) mpmFieldHint.style.display = 'none';
+        mpmDone.style.display = 'none';
+
+        bootstrap.Tab.getOrCreateInstance(tabLibraryEl).show();
+        doSearch();
+        modal.show();
+        boostAboveTinyMce();
+    }
+
+    window.VaryoMediaPicker = { openForCallback: openForCallback };
 
     // ── Gallery Done button ────────────────────────────────────────────────────────
     mpmDone.addEventListener('click', commitGallery);
@@ -316,6 +385,7 @@
     // ── Full reset on close (isolate pickers from each other) ─────────────────────
     modalEl.addEventListener('hidden.bs.modal', function () {
         activePicker    = null;
+        activeCallback  = null;
         activeMultiple  = false;
         activeMediaType = '';
         activeMaxMb     = null;

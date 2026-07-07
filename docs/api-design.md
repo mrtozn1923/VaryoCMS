@@ -183,6 +183,11 @@ A single API Key can cover multiple content types. Each content type has its own
 | GeoLocation | `{ "lat": 41.0, "lng": 29.0 }` |
 | JSON | `any` (raw JSON) |
 
+> **Media URL format:** `url` is DB-relative (`/uploads/{tenantId}/{file}`) by default — resolves
+> correctly only when the consumer shares the CMS's own origin. Set `Media:PublicBaseUrl`
+> (`Media__PublicBaseUrl` env var) to make it absolute (e.g. `https://cms.example.com/uploads/...`),
+> required for any external frontend consuming this API from a different origin.
+
 ---
 
 ## Write Request Format (POST / PUT)

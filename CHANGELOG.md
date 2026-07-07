@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] - 2026-07-07
+
+### Added
+- **RichText image insertion from the media library**: TinyMCE's Insert/Edit Image dialog now opens the CMS's own media picker (search + upload tabs) via a new `file_picker_callback` integration — `richtext-editor.js` calls `media-picker.js`'s new `openForCallback()` mode instead of leaving the "Source" field to a bare URL prompt. Inserted images stay tracked `media_assets` rows instead of arbitrary pasted URLs / base64 blobs.
+- **`MediaSettings.PublicBaseUrl`** (config section `Media`, e.g. `Media__PublicBaseUrl` env var): prefixes a configurable absolute base URL onto every media URL the CMS returns — admin media search/upload responses and the public API's `{ id, url }` media fields alike (`MediaService.MapToDto`, `PublicApiService.LoadMediaUrlsAsync`). Previously these were DB-relative (`/uploads/{tenant}/{file}`), which only resolved correctly when the consumer shared the CMS's own origin — breaking for any external frontend (e.g. the separate FrontendSite site) or for images embedded directly in RichText HTML. Unset/placeholder values are a no-op (URLs stay relative, current behavior preserved).
+
+### Fixed
+- **TinyMCE silently mangled inserted image URLs**: its default `relative_urls: true` rewrites *any* URL dropped into the editor (even an absolute one) into a path relative to the current admin edit page — e.g. `../../../../../uploads/1/abc.png` — which only ever resolves on that exact admin URL. Disabled (`relative_urls: false`, `remove_script_host: false`) so the URL the media picker hands back is preserved verbatim.
+- **Media picker modal rendered underneath TinyMCE's own dialog**: TinyMCE's floating-UI root (`.tox-tinymce-aux`) sits at `z-index: 1300`, above Bootstrap's default modal stack (1055/1050). Fixed with a dynamic boost in `media-picker.js` that reads whatever TinyMCE UI layer is actually open at that moment and stacks itself 100 above it — robust against TinyMCE's unpinned CDN version (`tinymce@7` = latest 7.x) shifting that number later, unlike a static CSS override.
+
+> Migration `007_dev_tenant_header_tagline.sql` (dev-tenant tenant only, additive): adds a `header-tagline` field to `site-settings` so the FrontendSite header tagline is CMS-managed instead of hardcoded in the frontend's `.resx` files (which remain as a fallback if the field is left empty).
+
 ## [1.4.3] - 2026-07-06
 
 ### Security

@@ -95,6 +95,11 @@ public static class DependencyInjection
         services.AddSingleton(emailSettings);
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
 
+        // Media URLs (public API responses, RichText embeds). Settings bound from "Media" config section.
+        var mediaSettings = configuration.GetSection("Media").Get<MediaSettings>()
+            ?? new MediaSettings();
+        services.AddSingleton(mediaSettings);
+
         // Note: IFileStorageService is registered at the composition root (needs WebRootPath).
 
         return services;

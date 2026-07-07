@@ -5,7 +5,7 @@
 | FieldType Enum | UI Component | Storage Column | Notes |
 |---|---|---|---|
 | `Text` | `<input type="text">` | value_text | max_length in options |
-| `RichText` | TinyMCE / Quill | value_text | HTML string |
+| `RichText` | TinyMCE 7 | value_text | HTML string; image insertion opens the CMS media library (search/upload), not a bare URL prompt |
 | `Markdown` | CodeMirror + preview | value_text | Markdown string |
 | `Number` | `<input type="number">` | value_number | integer |
 | `Decimal` | `<input type="number" step>` | value_number | decimal |

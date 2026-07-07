@@ -490,6 +490,26 @@ a:hover { color: var(--cms-primary-hover); }
 .rp-chip { font-weight: 500; }
 
 /* ------------------------------------------------- Media picker modal ---- */
+/* TinyMCE's floating-UI root (.tox-tinymce-aux) — NOT the individual .tox-dialog-wrap,
+   which is only z-index:1100 *inside that root's own stacking context* — is what actually
+   competes with the rest of the page. As of tinymce@7 that root renders at z-index:1300,
+   above Bootstrap's default .modal (1055) / .modal-backdrop (1050). When the RichText image
+   dialog's "Browse" button opens this modal on top of it (richtext-editor.js
+   file_picker_callback), it must outrank the *root*, or the two dialogs paint interleaved
+   instead of stacked. These static values are just a floor — since the CDN script tag pins
+   only the major version (tinymce@7 = "latest 7.x"), TinyMCE can bump that root's z-index
+   again without our code changing; media-picker.js additionally reads the live computed
+   z-index of any open .tox-tinymce-aux/.tox-dialog-wrap and boosts this modal above it at
+   open time, so this CSS floor only matters as a fallback before that JS runs.
+   Bootstrap always appends .modal-backdrop as the last child of <body>, so this can't be
+   scoped to #mediaPickerModal via a sibling selector — raise the shared backdrop class
+   instead (safe: no other modal in this app is ever open at the same time as a TinyMCE dialog). */
+#mediaPickerModal {
+  z-index: 1400;
+}
+.modal-backdrop {
+  z-index: 1395;
+}
 .mpm-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));

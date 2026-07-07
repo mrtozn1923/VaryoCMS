@@ -20,8 +20,9 @@ public class PublicApiServiceTests
     private readonly IResponseCache _cache = Substitute.For<IResponseCache>();
     private readonly IAuditLogger _audit = Substitute.For<IAuditLogger>();
     private readonly ISubmissionNotifier _notifier = Substitute.For<ISubmissionNotifier>();
+    private readonly MediaSettings _mediaSettings = new();
 
-    private PublicApiService Sut() => new(_tenants, _repo, _writeRepo, _hasher, _jwt, _cache, _audit, _notifier);
+    private PublicApiService Sut() => new(_tenants, _repo, _writeRepo, _hasher, _jwt, _cache, _audit, _notifier, _mediaSettings);
 
     private static readonly ApiCredentials NoCreds = new(null, null);
 

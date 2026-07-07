@@ -18,11 +18,13 @@ public class MediaService : IMediaService
     private readonly ITenantContext _tenant;
     private readonly IStringLocalizer<SharedResource> _t;
     private readonly IAuditLogger _audit;
+    private readonly MediaSettings _mediaSettings;
 
     public MediaService(
         IMediaRepository repository, IFileStorageService storage,
         IImageProcessor imageProcessor, ITenantContext tenant,
-        IStringLocalizer<SharedResource> t, IAuditLogger audit)
+        IStringLocalizer<SharedResource> t, IAuditLogger audit,
+        MediaSettings mediaSettings)
     {
         _repository = repository;
         _storage = storage;
@@ -30,6 +32,7 @@ public class MediaService : IMediaService
         _tenant = tenant;
         _t = t;
         _audit = audit;
+        _mediaSettings = mediaSettings;
     }
 
     public async Task<Result<MediaAssetDto>> UploadAsync(
@@ -194,12 +197,12 @@ public class MediaService : IMediaService
         return "file";
     }
 
-    private static MediaAssetDto MapToDto(MediaAsset a) => new()
+    private MediaAssetDto MapToDto(MediaAsset a) => new()
     {
         Id = a.Id,
         FileName = a.FileName,
         OriginalName = a.OriginalName,
-        Url = a.FilePath,
+        Url = _mediaSettings.ToAbsolute(a.FilePath)!,
         MediaType = a.MediaType,
         MimeType = a.MimeType,
         FileSizeBytes = a.FileSizeBytes,

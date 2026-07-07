@@ -3,7 +3,7 @@
 **Multi-tenant, multilingual headless Content Management System**  
 Built with ASP.NET Core 8 · Dapper · SQL Server · Docker
 
-> **v1.4.3** — Production-ready. Full-solution security re-audit: 2FA codes now hashed at rest, plus defense-in-depth tenant-scoping and a media-crop fix. See [CHANGELOG](CHANGELOG.md).
+> **v1.5.0** — RichText image insertion now uses the CMS's own media library (search/upload) instead of a bare URL prompt, media URLs can be served as absolute (`Media:PublicBaseUrl`) for cross-origin frontends, and a TinyMCE URL-mangling + modal-stacking bug are fixed. See [CHANGELOG](CHANGELOG.md).
 
 ---
 
