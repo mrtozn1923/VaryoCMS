@@ -208,9 +208,9 @@ Write operations (POST/PUT/DELETE) require a credential (no public write endpoin
 
 ```bash
 # Create a blog post
-curl -X POST "http://localhost:5267/api/v1/dev-tenant/blog-post" \
-  -H "X-API-Key: vk_1_demo123secret" \
-  -H "Content-Type: application/json" \
+curl -X POST 'http://localhost:5267/api/v1/dev-tenant/blog-post' \
+  -H 'X-API-Key: vk_1_demo123secret' \
+  -H 'Content-Type: application/json' \
   -d '{
     "status": "draft",
     "slug": "my-new-post",
@@ -239,13 +239,10 @@ After running `002_v1_system_seed.sql` + `003_v1_demo_seed.sql`, the dev tenant 
 **Test the API:**
 ```bash
 # Check credential id
-docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "Varyo_Dev2024!" -C -d Varyo \
-  -Q "SELECT id FROM api_credentials WHERE name='Demo Blog API Key';"
+docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Varyo_Dev2024!' -C -d Varyo -Q "SELECT id FROM api_credentials WHERE name='Demo Blog API Key';"
 
 # List blog posts in English (replace 1 with actual credential id)
-curl "http://localhost:5267/api/v1/dev-tenant/blog-post?lang=en" \
-  -H "X-API-Key: vk_1_demo123secret"
+curl 'http://localhost:5267/api/v1/dev-tenant/blog-post?lang=en' -H 'X-API-Key: vk_1_demo123secret'
 ```
 
 ---
@@ -261,22 +258,19 @@ git clone https://github.com/mrtozn1923/VaryoCMS.git && cd VaryoCMS
 # 2. Start SQL Server
 docker-compose -f docker/docker-compose.yml up -d sqlserver
 
-# 3. Wait ~10 sec for SQL Server to initialize, then apply migrations
-docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "Varyo_Dev2024!" -C -d Varyo \
-  -i /migrations/001_v1_schema.sql -b
+# 3. Wait ~10 sec for SQL Server to initialize, then create the 'Varyo' database.
+#    The container starts empty and the migration scripts do NOT create it — this step is required.
+docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Varyo_Dev2024!' -C -Q "IF DB_ID('Varyo') IS NULL CREATE DATABASE Varyo" -b
 
-docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "Varyo_Dev2024!" -C -d Varyo \
-  -i /migrations/002_v1_system_seed.sql -b
+# 4. Apply migrations
+docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Varyo_Dev2024!' -C -d Varyo -i /migrations/001_v1_schema.sql -b
+docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Varyo_Dev2024!' -C -d Varyo -i /migrations/002_v1_system_seed.sql -b
 
 # Optional: worked-example dev-tenant with demo content (skip if you'd
 # rather define your own tenants/content types from a clean system)
-docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "Varyo_Dev2024!" -C -d Varyo \
-  -i /migrations/003_v1_demo_seed.sql -b
+docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Varyo_Dev2024!' -C -d Varyo -i /migrations/003_v1_demo_seed.sql -b
 
-# 4. Run the web app
+# 5. Run the web app
 dotnet run --project src/VaryoCms.Web
 
 # Open http://localhost:5267
@@ -288,7 +282,8 @@ dotnet run --project src/VaryoCms.Web
 cp docker/.env.example docker/.env
 # Edit docker/.env: set DB_PASSWORD and JWT_SIGNING_KEY
 docker-compose -f docker/docker-compose.yml up --build
-# Apply migrations (same sqlcmd commands, now against varyo_db container)
+# Then create the 'Varyo' database and apply migrations
+# (same sqlcmd commands as above, run against the varyo_db container)
 ```
 
 ### Option B — Pre-built image from GitHub Packages (GHCR)
@@ -316,25 +311,25 @@ git push origin v1.1.0
 ### Option C — Classic publish
 
 ```bash
-# 1. Apply schema to your SQL Server
-sqlcmd -S YOUR_SERVER -U sa -P YOUR_PASS -d Varyo \
-  -i db/migrations/001_v1_schema.sql -b
+# 1. Create the 'Varyo' database on your SQL Server (migrations do NOT create it)
+sqlcmd -S YOUR_SERVER -U sa -P 'YOUR_PASS' -Q "IF DB_ID('Varyo') IS NULL CREATE DATABASE Varyo" -b
 
-# 2. Apply system bootstrap (SystemAdmin + admin-UI translations — required)
-sqlcmd -S YOUR_SERVER -U sa -P YOUR_PASS -d Varyo \
-  -i db/migrations/002_v1_system_seed.sql -b
+# 2. Apply schema
+sqlcmd -S YOUR_SERVER -U sa -P 'YOUR_PASS' -d Varyo -i db/migrations/001_v1_schema.sql -b
 
-# 3. Apply demo seed (optional — worked-example dev-tenant + content)
-sqlcmd -S YOUR_SERVER -U sa -P YOUR_PASS -d Varyo \
-  -i db/migrations/003_v1_demo_seed.sql -b
+# 3. Apply system bootstrap (SystemAdmin + admin-UI translations — required)
+sqlcmd -S YOUR_SERVER -U sa -P 'YOUR_PASS' -d Varyo -i db/migrations/002_v1_system_seed.sql -b
 
-# 4. Set production config (env vars or appsettings.Production.json)
-export ConnectionStrings__VaryoCms="Server=...;Database=Varyo;..."
-export Jwt__SigningKey="your-secret-key-32-chars-minimum"
+# 4. Apply demo seed (optional — worked-example dev-tenant + content)
+sqlcmd -S YOUR_SERVER -U sa -P 'YOUR_PASS' -d Varyo -i db/migrations/003_v1_demo_seed.sql -b
 
-# 5. Publish and run
+# 5. Set production config (env vars or appsettings.Production.json)
+export ConnectionStrings__VaryoCms='Server=...;Database=Varyo;...'
+export Jwt__SigningKey='your-secret-key-32-chars-minimum'
+
+# 6. Publish and run
 dotnet publish src/VaryoCms.Web -c Release -o ./publish
-dotnet publish/VaryoCms.Web.dll
+dotnet ./publish/VaryoCms.Web.dll
 ```
 
 ---
@@ -394,10 +389,11 @@ All architectural decisions and invariants are documented in:
 
 ```bash
 dotnet test VaryoCms.sln
-# 156 unit tests (xUnit + NSubstitute); no DB required
-# Tests: FieldValueMapper, RelationOptions, BCryptPasswordHasher,
-#        JwtTokenService, PermissionService, ContentItemService,
-#        PublicApiService, SlugifierTests (including ToCamelCase)
+# 182 tests total: 156 unit (xUnit + NSubstitute, no DB required)
+#                  + 8 integration + 18 UI (both need the Docker SQL Server running)
+# Unit tests cover: FieldValueMapper, RelationOptions, BCryptPasswordHasher,
+#                   JwtTokenService, PermissionService, ContentItemService,
+#                   PublicApiService, SlugifierTests (including ToCamelCase)
 ```
 
 ---
