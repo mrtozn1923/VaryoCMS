@@ -13,6 +13,10 @@ namespace VaryoCms.Web.Middleware;
 //  - Anonymous requests (login pages, public API, static errors) — nothing to bind yet.
 //  - SystemAdmins — they legitimately operate cross-tenant (and use impersonation, which already
 //    overrode ITenantContext to the target tenant above).
+//  - Requests with no resolved tenant (TenantId <= 0) — TenantResolutionMiddleware skips
+//    /system/* and /api/* (public API + API docs authenticate via credentials, not the session),
+//    so there is no tenant to bind the session to; comparing against 0 would 403 every
+//    signed-in tenant user who opens /api/docs or calls the public API from the same browser.
 public class TenantAccessGuardMiddleware
 {
     private readonly RequestDelegate _next;
@@ -22,7 +26,7 @@ public class TenantAccessGuardMiddleware
     public async Task InvokeAsync(
         HttpContext context, ICurrentUserContext currentUser, ITenantContext tenantContext)
     {
-        if (currentUser.IsAuthenticated && !currentUser.IsSystemAdmin)
+        if (currentUser.IsAuthenticated && !currentUser.IsSystemAdmin && tenantContext.TenantId > 0)
         {
             int? userTenant = currentUser.TenantId;
             if (userTenant is null || userTenant.Value != tenantContext.TenantId)
