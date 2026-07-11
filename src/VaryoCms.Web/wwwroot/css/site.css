@@ -501,14 +501,11 @@ a:hover { color: var(--cms-primary-hover); }
    again without our code changing; media-picker.js additionally reads the live computed
    z-index of any open .tox-tinymce-aux/.tox-dialog-wrap and boosts this modal above it at
    open time, so this CSS floor only matters as a fallback before that JS runs.
-   Bootstrap always appends .modal-backdrop as the last child of <body>, so this can't be
-   scoped to #mediaPickerModal via a sibling selector — raise the shared backdrop class
-   instead (safe: no other modal in this app is ever open at the same time as a TinyMCE dialog). */
+   The matching backdrop boost is JS-only (media-picker.js sets an inline z-index on the
+   backdrop Bootstrap just created): a global .modal-backdrop raise would sit above every
+   OTHER modal in the app (Bootstrap default .modal is 1055) and swallow their clicks. */
 #mediaPickerModal {
   z-index: 1400;
-}
-.modal-backdrop {
-  z-index: 1395;
 }
 .mpm-grid {
   display: grid;
