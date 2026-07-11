@@ -1140,7 +1140,7 @@
     <div class="hero-content">
       <div class="hero-badge">
         <span class="hero-badge-dot"></span>
-        Open Source · Production Ready · v1.0.0
+        Open Source · Production Ready · v1.5.1
       </div>
       <h1 class="hero-title">
         <span class="gradient-text">Varyo</span> CMS
@@ -1158,7 +1158,7 @@
         </a>
       </div>
       <div class="hero-badges">
-        <span class="hero-pill pill-version">v1.0.0</span>
+        <span class="hero-pill pill-version">v1.5.1</span>
         <span class="hero-pill pill-license">MIT License</span>
         <span class="hero-pill pill-security">0 Security Findings</span>
       </div>
@@ -1172,7 +1172,7 @@
     <div class="container">
       <div class="stats-bar reveal">
         <div class="stat-item">
-          <div class="stat-value gradient-text">26</div>
+          <div class="stat-value gradient-text">24</div>
           <div class="stat-label">Tables</div>
         </div>
         <div class="stat-item">
@@ -1184,7 +1184,7 @@
           <div class="stat-label">User Roles</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value gradient-text">156</div>
+          <div class="stat-value gradient-text">182</div>
           <div class="stat-label">Tests Passing</div>
         </div>
       </div>
@@ -1759,13 +1759,19 @@
   <span class="t-flag">-S</span> localhost <span class="t-flag">-U</span> sa <span class="t-flag">-P</span> <span class="t-string">"YourPass!"</span> <span class="t-flag">-C \</span>
   <span class="t-flag">-d</span> Varyo <span class="t-flag">-i</span> /migrations/001_v1_schema.sql <span class="t-flag">-b</span>
 
-<span class="t-comment"># Step 3 — Apply dev seed (optional)</span>
+<span class="t-comment"># Step 3 — Apply system seed (SystemAdmin account)</span>
 <span class="t-prompt">$ </span><span class="t-cmd">docker exec varyo_db \</span>
   <span class="t-cmd">/opt/mssql-tools18/bin/sqlcmd \</span>
   <span class="t-flag">-S</span> localhost <span class="t-flag">-U</span> sa <span class="t-flag">-P</span> <span class="t-string">"YourPass!"</span> <span class="t-flag">-C \</span>
-  <span class="t-flag">-d</span> Varyo <span class="t-flag">-i</span> /migrations/002_v1_dev_seed.sql <span class="t-flag">-b</span>
+  <span class="t-flag">-d</span> Varyo <span class="t-flag">-i</span> /migrations/002_v1_system_seed.sql <span class="t-flag">-b</span>
 
-<span class="t-comment"># Step 4 — Run the app</span>
+<span class="t-comment"># Step 4 — Apply demo seed (optional worked example)</span>
+<span class="t-prompt">$ </span><span class="t-cmd">docker exec varyo_db \</span>
+  <span class="t-cmd">/opt/mssql-tools18/bin/sqlcmd \</span>
+  <span class="t-flag">-S</span> localhost <span class="t-flag">-U</span> sa <span class="t-flag">-P</span> <span class="t-string">"YourPass!"</span> <span class="t-flag">-C \</span>
+  <span class="t-flag">-d</span> Varyo <span class="t-flag">-i</span> /migrations/003_v1_demo_seed.sql <span class="t-flag">-b</span>
+
+<span class="t-comment"># Step 5 — Run the app</span>
 <span class="t-prompt">$ </span><span class="t-cmd">dotnet run <span class="t-flag">--project</span> src/VaryoCms.Web</span>
 
 <span class="t-success">info: Now listening on http://localhost:5267</span>
