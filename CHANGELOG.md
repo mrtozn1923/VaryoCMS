@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.1] - 2026-07-11
+
+### Changed
+- **Migration files re-consolidated (7 → 3 in `db/migrations/`, plus a new `db/tenant-seeds/`)**: the migration chain, consolidated to two files at v1.0.0 (`001_v1_schema.sql` + `002_v1_dev_seed.sql`), had grown back out to seven numbered files (001-007) via additive per-feature migrations. Re-consolidated into:
+  - `001_v1_schema.sql` — schema, now including what were previously separate schema-only migrations: `content_items.is_read` / `content_types.notify_on_create` / `IX_content_items_unread` (formerly migration 005) and the `login_codes.code` NVARCHAR(10)→(100) widening (formerly migration 006), baked directly into their `CREATE TABLE` statements.
+  - `002_v1_system_seed.sql` (renamed from `002_v1_dev_seed.sql`) — SystemAdmin account + ~300 admin-UI translation keys only. Creates **no tenant or content structure** — the starting point for anyone cloning the project to build their own tenant(s)/content types from scratch.
+  - `003_v1_demo_seed.sql` (new) — a worked example: `dev-tenant` with languages, a TenantAdmin user, demo content types (Category/Author/Blog Post) with sample content, and a demo API credential. Optional; skip it for a clean install.
+  - `db/tenant-seeds/dev-tenant-seed.sql` (new location, formerly `db/migrations/003_dev_tenant_seed.sql` + `004_contact_messages.sql` + `007_dev_tenant_header_tagline.sql`) — the real "Mert Özen" tenant's content, consumed by FrontendSite. No longer part of the migration chain and no longer applied by the test suite; it's environment-specific production content, applied manually.
+
+  Splitting system-bootstrap from demo content (rather than one combined seed file) was necessary because the demo tenant and the real dev-tenant tenant seed can't safely share a file: dev-tenant's seed does a full-instance reset (deletes all tenants before reseeding itself), which would silently wipe the generic `dev-tenant` that `VaryoCms.IntegrationTests`/`VaryoCms.UiTests` depend on if both lived in the same script.
+
+  Verified by applying `001`→`002`→`003` against a scratch database and comparing schema deltas and row counts against the live dev database (schema-defining counts — content types/fields/API configs — matched exactly; the small difference in dev-tenant `content_items` reflects real contact-form submissions accumulated in production, not a consolidation gap). `VaryoCms.IntegrationTests.csproj` and `VaryoCms.UiTests.csproj` updated to copy the new file set; full suite (182/182) green.
+
 ## [1.5.0] - 2026-07-07
 
 ### Added

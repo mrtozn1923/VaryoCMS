@@ -3,7 +3,7 @@
 **Multi-tenant, multilingual headless Content Management System**  
 Built with ASP.NET Core 8 · Dapper · SQL Server · Docker
 
-> **v1.5.0** — RichText image insertion now uses the CMS's own media library (search/upload) instead of a bare URL prompt, media URLs can be served as absolute (`Media:PublicBaseUrl`) for cross-origin frontends, and a TinyMCE URL-mangling + modal-stacking bug are fixed. See [CHANGELOG](CHANGELOG.md).
+> **v1.5.1** — Migration files re-consolidated: `db/migrations/` now holds just `001_v1_schema.sql` (schema) + `002_v1_system_seed.sql` (SystemAdmin + admin-UI translations, no tenant/content) + `003_v1_demo_seed.sql` (optional worked-example tenant). Real tenant content lives separately in `db/tenant-seeds/`. See [CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -225,7 +225,7 @@ curl -X POST "http://localhost:5267/api/v1/dev-tenant/blog-post" \
 
 ## Demo Data (Dev Seed)
 
-After running `002_v1_dev_seed.sql`, the dev tenant has:
+After running `002_v1_system_seed.sql` + `003_v1_demo_seed.sql`, the dev tenant has:
 
 | Resource | Details |
 |---|---|
@@ -268,7 +268,13 @@ docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd \
 
 docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd \
   -S localhost -U sa -P "Varyo_Dev2024!" -C -d Varyo \
-  -i /migrations/002_v1_dev_seed.sql -b
+  -i /migrations/002_v1_system_seed.sql -b
+
+# Optional: worked-example dev-tenant with demo content (skip if you'd
+# rather define your own tenants/content types from a clean system)
+docker exec varyo_db /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "Varyo_Dev2024!" -C -d Varyo \
+  -i /migrations/003_v1_demo_seed.sql -b
 
 # 4. Run the web app
 dotnet run --project src/VaryoCms.Web
@@ -314,15 +320,19 @@ git push origin v1.1.0
 sqlcmd -S YOUR_SERVER -U sa -P YOUR_PASS -d Varyo \
   -i db/migrations/001_v1_schema.sql -b
 
-# 2. Apply dev seed (optional)
+# 2. Apply system bootstrap (SystemAdmin + admin-UI translations — required)
 sqlcmd -S YOUR_SERVER -U sa -P YOUR_PASS -d Varyo \
-  -i db/migrations/002_v1_dev_seed.sql -b
+  -i db/migrations/002_v1_system_seed.sql -b
 
-# 3. Set production config (env vars or appsettings.Production.json)
+# 3. Apply demo seed (optional — worked-example dev-tenant + content)
+sqlcmd -S YOUR_SERVER -U sa -P YOUR_PASS -d Varyo \
+  -i db/migrations/003_v1_demo_seed.sql -b
+
+# 4. Set production config (env vars or appsettings.Production.json)
 export ConnectionStrings__VaryoCms="Server=...;Database=Varyo;..."
 export Jwt__SigningKey="your-secret-key-32-chars-minimum"
 
-# 4. Publish and run
+# 5. Publish and run
 dotnet publish src/VaryoCms.Web -c Release -o ./publish
 dotnet publish/VaryoCms.Web.dll
 ```
@@ -333,13 +343,25 @@ dotnet publish/VaryoCms.Web.dll
 
 ```
 db/migrations/
-├── 001_v1_schema.sql     — Complete production schema (all 26 tables, indexes, constraints)
-└── 002_v1_dev_seed.sql   — DEV ONLY: tenant, users, languages, 300+ UI translations (tr+en),
-                            audit action labels, Tech Blog demo content + API credential
+├── 001_v1_schema.sql       — Complete production schema (all tables, indexes, constraints)
+├── 002_v1_system_seed.sql  — SystemAdmin account + 300+ admin-UI translations (tr+en). No
+│                             tenant/content structure — safe for any environment, including
+│                             production clones that will define their own tenants.
+└── 003_v1_demo_seed.sql    — DEV ONLY, optional: a worked-example 'dev-tenant' with languages,
+                              a TenantAdmin user, and demo content (Category/Author/Blog Post)
+                              + a read-only API credential.
+
+db/tenant-seeds/
+└── dev-tenant-seed.sql      — Real content for the author's own "Mert Özen" tenant (consumed by
+                              the FrontendSite frontend). Not part of the standard migration
+                              chain, not applied by tests — apply manually, environment-specific.
 ```
 
-**Production:** run only `001_v1_schema.sql`, then insert your own tenant/user data.  
-For v1.1.0+ changes, add `003_<description>.sql`, `004_<description>.sql`, etc.
+**Production:** run `001_v1_schema.sql` + `002_v1_system_seed.sql`, then sign into `/system/login`
+and create your own tenant(s) and content types. Skip `003_v1_demo_seed.sql` (dev-only demo data).
+For new platform migrations, add `004_<description>.sql`, `005_<description>.sql`, etc. — keep
+one-off, environment-specific tenant content out of `db/migrations/` (put it in
+`db/tenant-seeds/` instead, following the `dev-tenant-seed.sql` pattern).
 
 ---
 

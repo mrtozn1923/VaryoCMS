@@ -273,20 +273,33 @@ CREATE TABLE api_field_visibility (
 
 ---
 
-## Migration Files (v1.0.0 — consolidated)
+## Migration Files (v1.5.0 — re-consolidated)
 
-As of v1.0.0, all 39 incremental migrations have been consolidated into two files:
+As of v1.5.0, the migration chain (which had grown back out to seven numbered files, 001–007,
+via additive per-feature migrations) was re-consolidated into three files:
 
 ```
 db/migrations/
-├── 001_v1_schema.sql      — Complete production schema (all tables, indexes, constraints)
-└── 002_v1_dev_seed.sql    — DEV-ONLY: tenant, users, languages, ~300 UI translation keys (tr+en)
+├── 001_v1_schema.sql       — Complete production schema (all tables, indexes, constraints)
+├── 002_v1_system_seed.sql  — SystemAdmin account + ~300 admin-UI translation keys (tr+en). No
+│                             tenant or content structure — safe for any environment.
+└── 003_v1_demo_seed.sql    — DEV-ONLY, optional: worked-example 'dev-tenant' with languages,
+                              a TenantAdmin user, and demo content types/items.
+
+db/tenant-seeds/
+└── dev-tenant-seed.sql      — Real content for the author's own "Mert Özen" tenant. NOT part of
+                              the migration chain and NOT applied by the test suite — it targets
+                              a specific production tenant, applied manually.
 ```
 
-> **Production:** run only `001_v1_schema.sql` and insert your own tenant/user seed data.
-> **Development:** run both files in order.
+> **Production:** run `001_v1_schema.sql` + `002_v1_system_seed.sql`, then sign into
+> `/system/login` and create your own tenant(s)/content types. Skip `003_v1_demo_seed.sql`.
+> **Development (full worked example):** run all three files in order.
 >
-> For v1.1.0+ migrations, add numbered files: `003_<description>.sql`, `004_<description>.sql`, etc.
+> For new platform migrations, add numbered files: `004_<description>.sql`, `005_<description>.sql`,
+> etc. Keep environment-specific tenant content (real customer/demo data for one particular
+> tenant) out of `db/migrations/` — put it in `db/tenant-seeds/` instead, following the
+> `dev-tenant-seed.sql` pattern, so it doesn't get picked up by the test suite or a fresh clone.
 
 ### ui_cultures / ui_translations  (root tables — no tenant_id; global admin-UI i18n, SystemAdmin-managed)
 ```sql
@@ -323,9 +336,8 @@ CREATE TABLE system_admins (
 ```
 > No `tenant_id` and no `role` column — every row is a SystemAdmin. Separate from `users` so the
 > `users.tenant_id NOT NULL` invariant and tenant-scoped queries stay intact.
-> Note: 007 (indexes/constraints) was never created — filtered unique indexes and FKs were folded into
-> migrations 001–006. Numbering jumps from 006 to the 008+ dev seeds. Dev seeds are idempotent; do NOT
-> run against production (and change the seeded admin password after first login).
+> Seeded by `002_v1_system_seed.sql` (dev/demo `root@system.local` account). Dev seeds are
+> idempotent; do NOT run against production without changing the seeded password after first login.
 
 ### audit_logs  (tenant-scoped business event log — migration 030)
 ```sql

@@ -19,24 +19,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Copy schema + base seed + additive platform migrations. Tenant-specific dev seeds like
-         003/004 (which wipe/target dev data) are excluded; but additive schema migrations (005:
-         is_read / notify_on_create columns) MUST be included or repository queries fail. -->
+    <!-- Schema + system bootstrap + demo dev-tenant seed. As of v1.5.0 this is the full
+         migration chain (formerly 001/002/005/006 — the schema-affecting parts of 005/006
+         are now baked into 001_v1_schema.sql). Tenant-specific content
+         (db/tenant-seeds/dev-tenant-seed.sql) is intentionally excluded — it targets a real
+         production tenant, not test fixtures. -->
     <Content Include="..\..\db\migrations\001_v1_schema.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>migrations\001_v1_schema.sql</Link>
     </Content>
-    <Content Include="..\..\db\migrations\002_v1_dev_seed.sql">
+    <Content Include="..\..\db\migrations\002_v1_system_seed.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>migrations\002_v1_dev_seed.sql</Link>
+      <Link>migrations\002_v1_system_seed.sql</Link>
     </Content>
-    <Content Include="..\..\db\migrations\005_inbox_and_notify.sql">
+    <Content Include="..\..\db\migrations\003_v1_demo_seed.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>migrations\005_inbox_and_notify.sql</Link>
-    </Content>
-    <Content Include="..\..\db\migrations\006_widen_login_code_hash.sql">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>migrations\006_widen_login_code_hash.sql</Link>
+      <Link>migrations\003_v1_demo_seed.sql</Link>
     </Content>
   </ItemGroup>
 

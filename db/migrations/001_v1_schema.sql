@@ -68,18 +68,19 @@ GO
 -- ============================================================
 
 CREATE TABLE content_types (
-    id              INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_content_types PRIMARY KEY,
-    tenant_id       INT NOT NULL CONSTRAINT FK_content_types_tenants REFERENCES tenants(id),
-    name            NVARCHAR(200) NOT NULL,
-    slug            NVARCHAR(200) NOT NULL,        -- used in URL + API
-    description     NVARCHAR(1000) NULL,
-    icon            NVARCHAR(100) NULL,            -- icon class e.g. "bi-file-text"
-    is_published    BIT NOT NULL CONSTRAINT DF_content_types_is_published DEFAULT 0,
-    sort_order      INT NOT NULL CONSTRAINT DF_content_types_sort_order DEFAULT 0,   -- menu order
-    parent_id       INT NULL CONSTRAINT FK_content_types_parent REFERENCES content_types(id),  -- migration 039
-    created_at      DATETIME2 NOT NULL CONSTRAINT DF_content_types_created_at DEFAULT GETUTCDATE(),
-    updated_at      DATETIME2 NOT NULL CONSTRAINT DF_content_types_updated_at DEFAULT GETUTCDATE(),
-    is_deleted      BIT NOT NULL CONSTRAINT DF_content_types_is_deleted DEFAULT 0
+    id               INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_content_types PRIMARY KEY,
+    tenant_id        INT NOT NULL CONSTRAINT FK_content_types_tenants REFERENCES tenants(id),
+    name             NVARCHAR(200) NOT NULL,
+    slug             NVARCHAR(200) NOT NULL,        -- used in URL + API
+    description      NVARCHAR(1000) NULL,
+    icon             NVARCHAR(100) NULL,            -- icon class e.g. "bi-file-text"
+    is_published     BIT NOT NULL CONSTRAINT DF_content_types_is_published DEFAULT 0,
+    sort_order       INT NOT NULL CONSTRAINT DF_content_types_sort_order DEFAULT 0,   -- menu order
+    parent_id        INT NULL CONSTRAINT FK_content_types_parent REFERENCES content_types(id),  -- migration 039
+    notify_on_create BIT NOT NULL CONSTRAINT DF_content_types_notify_on_create DEFAULT 0,        -- migration 005: "form submission inbox" type
+    created_at       DATETIME2 NOT NULL CONSTRAINT DF_content_types_created_at DEFAULT GETUTCDATE(),
+    updated_at       DATETIME2 NOT NULL CONSTRAINT DF_content_types_updated_at DEFAULT GETUTCDATE(),
+    is_deleted       BIT NOT NULL CONSTRAINT DF_content_types_is_deleted DEFAULT 0
 );
 GO
 
@@ -153,6 +154,7 @@ CREATE TABLE content_items (
     created_by      INT NULL CONSTRAINT FK_content_items_created_by REFERENCES users(id),
     updated_by      INT NULL CONSTRAINT FK_content_items_updated_by REFERENCES users(id),
     published_at    DATETIME2 NULL,
+    is_read         BIT NOT NULL CONSTRAINT DF_content_items_is_read DEFAULT 0,   -- migration 005: submission-inbox read/unread
     created_at      DATETIME2 NOT NULL CONSTRAINT DF_content_items_created_at DEFAULT GETUTCDATE(),
     updated_at      DATETIME2 NOT NULL CONSTRAINT DF_content_items_updated_at DEFAULT GETUTCDATE(),
     is_deleted      BIT NOT NULL CONSTRAINT DF_content_items_is_deleted DEFAULT 0
@@ -167,6 +169,10 @@ GO
 
 -- Slug lookup for public API (GET /{content-type}/slug/{slug})
 CREATE NONCLUSTERED INDEX IX_content_items_slug ON content_items (tenant_id, content_type_id, slug) WHERE is_deleted = 0;
+GO
+
+-- Fast filter for unread submission-inbox items (migration 005)
+CREATE NONCLUSTERED INDEX IX_content_items_unread ON content_items (tenant_id, content_type_id) WHERE is_read = 0 AND is_deleted = 0;
 GO
 
 -- EAV: actual data; no soft-delete per schema
@@ -522,7 +528,7 @@ CREATE TABLE login_codes (
     email       NVARCHAR(256) NOT NULL,
     tenant_type NVARCHAR(20)  NOT NULL,  -- 'tenant' | 'system'
     tenant_id   INT           NULL,       -- NULL for system admins
-    code        NVARCHAR(10)  NOT NULL,   -- widened to NVARCHAR(100) by migration 006 (hashed codes)
+    code        NVARCHAR(100) NOT NULL,   -- BCrypt hash of the 6-digit code (migration 006)
     attempts    INT           NOT NULL DEFAULT 0,
     expires_at  DATETIME2     NOT NULL,
     used_at     DATETIME2     NULL,
