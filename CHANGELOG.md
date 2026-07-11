@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.2] - 2026-07-11
+
+### Fixed
+- **Every non-media-picker modal stopped receiving clicks** (regression from v1.5.0's TinyMCE stacking fix): the fix raised `.modal-backdrop` to `z-index: 1395` **globally**, which put the backdrop above Bootstrap's default `.modal` (1055) — so modals like the field builder's "Customize Field Options" rendered underneath their own backdrop and every click landed on the backdrop instead. The global CSS rule is removed; the backdrop boost is JS-only now (`media-picker.js` already sets an inline z-index on the backdrop it just created, scoped to the picker-over-TinyMCE case), so other modals are back on Bootstrap's default stack.
+- **Signed-in tenant users got 403 on `/api/docs` and public API routes**: `TenantResolutionMiddleware` deliberately skips `/api/*` (the API layer resolves the tenant from the URL slug), leaving `ITenantContext.TenantId` at 0 — but `TenantAccessGuardMiddleware` compared the session's tenant claim against that 0 and rejected every authenticated non-SystemAdmin request. In practice: a TenantAdmin clicking through to the API Explorer from the admin panel hit a bare 403 (anonymous visitors were unaffected, since the guard exempts them — which is why it went unnoticed). The guard now enforces session↔tenant binding only when a tenant was actually resolved (`TenantId > 0`); `/api/*` keeps its own credential-based auth, and the admin-panel binding is unchanged.
+
+### Docs
+- README quick-start cleanup: all `docker exec` / `sqlcmd` commands single-line with single-quoted passwords (copy-paste safe in zsh — no history expansion on `!`); added the previously undocumented **"create the `Varyo` database" step** (neither docker-compose nor the migration scripts create it) to Option A, the production-Docker note, and Option C; fixed the broken `dotnet publish/VaryoCms.Web.dll` run command; Tests section now reflects the full 182-test suite and its Docker SQL dependency.
+
 ## [1.5.1] - 2026-07-11
 
 ### Changed
