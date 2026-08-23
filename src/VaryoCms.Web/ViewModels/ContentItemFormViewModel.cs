@@ -56,7 +56,11 @@ public class ContentItemFormViewModel
         if (string.Equals(lang, PrimaryLanguageCode, StringComparison.OrdinalIgnoreCase)) return true;
         if (!string.IsNullOrWhiteSpace(Titles.GetValueOrDefault(lang))) return true;
         if (LanguageActive.GetValueOrDefault(lang)) return true;
-        if (LocalizedValues.TryGetValue(lang, out var vals) && vals.Values.Any(v => !string.IsNullOrWhiteSpace(v)))
+        // "false" is skipped: every Boolean field posts a hidden "false" fallback (see
+        // _FieldInput.cshtml), which would otherwise mark every language as "has content" and drag
+        // untranslated languages into the save loop.
+        if (LocalizedValues.TryGetValue(lang, out var vals) &&
+            vals.Values.Any(v => !string.IsNullOrWhiteSpace(v) && v != "false"))
             return true;
         bool HasRange(Dictionary<string, Dictionary<int, string?>> ranges) =>
             ranges.TryGetValue(lang, out var r) && r.Values.Any(v => !string.IsNullOrWhiteSpace(v));

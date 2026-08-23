@@ -28,8 +28,14 @@
     {
         case FieldType.Boolean:
             <div class="form-check form-switch">
+                @* An unchecked checkbox posts nothing, and BuildValues() skips field ids that are
+                   absent from the request — so without this "false" fallback (same name, rendered
+                   after the checkbox, exactly what asp-for does for bools) unchecking a Boolean
+                   would leave the stored value_bool untouched, i.e. it could never be turned off.
+                   Model binding takes the first posted value, so "true" still wins when checked. *@
                 <input type="checkbox" class="form-check-input" id="@id" name="@name" value="true"
                        @(val == "true" ? "checked" : null) />
+                <input type="hidden" name="@name" value="false" />
             </div>
             break;
 
