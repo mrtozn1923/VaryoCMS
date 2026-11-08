@@ -22,7 +22,7 @@
     <!-- Schema + system bootstrap + demo dev-tenant seed. As of v1.5.0 this is the full
          migration chain (formerly 001/002/005/006 — the schema-affecting parts of 005/006
          are now baked into 001_v1_schema.sql). Tenant-specific content
-         (db/tenant-seeds/dev-tenant-seed.sql) is intentionally excluded — it targets a real
+         (db/tenant-seeds/*.sql) is intentionally excluded — it targets a real
          production tenant, not test fixtures. -->
     <Content Include="..\..\db\migrations\001_v1_schema.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

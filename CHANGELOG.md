@@ -32,23 +32,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `001_v1_schema.sql` — schema, now including what were previously separate schema-only migrations: `content_items.is_read` / `content_types.notify_on_create` / `IX_content_items_unread` (formerly migration 005) and the `login_codes.code` NVARCHAR(10)→(100) widening (formerly migration 006), baked directly into their `CREATE TABLE` statements.
   - `002_v1_system_seed.sql` (renamed from `002_v1_dev_seed.sql`) — SystemAdmin account + ~300 admin-UI translation keys only. Creates **no tenant or content structure** — the starting point for anyone cloning the project to build their own tenant(s)/content types from scratch.
   - `003_v1_demo_seed.sql` (new) — a worked example: `dev-tenant` with languages, a TenantAdmin user, demo content types (Category/Author/Blog Post) with sample content, and a demo API credential. Optional; skip it for a clean install.
-  - `db/tenant-seeds/dev-tenant-seed.sql` (new location, formerly `db/migrations/003_dev_tenant_seed.sql` + `004_contact_messages.sql` + `007_dev_tenant_header_tagline.sql`) — the real "Mert Özen" tenant's content, consumed by FrontendSite. No longer part of the migration chain and no longer applied by the test suite; it's environment-specific production content, applied manually.
+  - `db/tenant-seeds/<tenant>-seed.sql` (new location for the former tenant-specific migrations `003`, `004` and `007`) — one real tenant's content, consumed by its frontend. No longer part of the migration chain and no longer applied by the test suite; it's environment-specific production content, applied manually.
 
-  Splitting system-bootstrap from demo content (rather than one combined seed file) was necessary because the demo tenant and the real dev-tenant tenant seed can't safely share a file: dev-tenant's seed does a full-instance reset (deletes all tenants before reseeding itself), which would silently wipe the generic `dev-tenant` that `VaryoCms.IntegrationTests`/`VaryoCms.UiTests` depend on if both lived in the same script.
+  Splitting system-bootstrap from demo content (rather than one combined seed file) was necessary because the demo tenant and a real tenant seed can't safely share a file: that tenant seed does a full-instance reset (deletes all tenants before reseeding itself), which would silently wipe the generic `dev-tenant` that `VaryoCms.IntegrationTests`/`VaryoCms.UiTests` depend on if both lived in the same script.
 
-  Verified by applying `001`→`002`→`003` against a scratch database and comparing schema deltas and row counts against the live dev database (schema-defining counts — content types/fields/API configs — matched exactly; the small difference in dev-tenant `content_items` reflects real contact-form submissions accumulated in production, not a consolidation gap). `VaryoCms.IntegrationTests.csproj` and `VaryoCms.UiTests.csproj` updated to copy the new file set; full suite (182/182) green.
+  Verified by applying `001`→`002`→`003` against a scratch database and comparing schema deltas and row counts against the live dev database (schema-defining counts — content types/fields/API configs — matched exactly; the small difference in the real tenant's `content_items` reflects real contact-form submissions accumulated in production, not a consolidation gap). `VaryoCms.IntegrationTests.csproj` and `VaryoCms.UiTests.csproj` updated to copy the new file set; full suite (182/182) green.
 
 ## [1.5.0] - 2026-07-07
 
 ### Added
 - **RichText image insertion from the media library**: TinyMCE's Insert/Edit Image dialog now opens the CMS's own media picker (search + upload tabs) via a new `file_picker_callback` integration — `richtext-editor.js` calls `media-picker.js`'s new `openForCallback()` mode instead of leaving the "Source" field to a bare URL prompt. Inserted images stay tracked `media_assets` rows instead of arbitrary pasted URLs / base64 blobs.
-- **`MediaSettings.PublicBaseUrl`** (config section `Media`, e.g. `Media__PublicBaseUrl` env var): prefixes a configurable absolute base URL onto every media URL the CMS returns — admin media search/upload responses and the public API's `{ id, url }` media fields alike (`MediaService.MapToDto`, `PublicApiService.LoadMediaUrlsAsync`). Previously these were DB-relative (`/uploads/{tenant}/{file}`), which only resolved correctly when the consumer shared the CMS's own origin — breaking for any external frontend (e.g. the separate FrontendSite site) or for images embedded directly in RichText HTML. Unset/placeholder values are a no-op (URLs stay relative, current behavior preserved).
+- **`MediaSettings.PublicBaseUrl`** (config section `Media`, e.g. `Media__PublicBaseUrl` env var): prefixes a configurable absolute base URL onto every media URL the CMS returns — admin media search/upload responses and the public API's `{ id, url }` media fields alike (`MediaService.MapToDto`, `PublicApiService.LoadMediaUrlsAsync`). Previously these were DB-relative (`/uploads/{tenant}/{file}`), which only resolved correctly when the consumer shared the CMS's own origin — breaking for any external frontend or for images embedded directly in RichText HTML. Unset/placeholder values are a no-op (URLs stay relative, current behavior preserved).
 
 ### Fixed
 - **TinyMCE silently mangled inserted image URLs**: its default `relative_urls: true` rewrites *any* URL dropped into the editor (even an absolute one) into a path relative to the current admin edit page — e.g. `../../../../../uploads/1/abc.png` — which only ever resolves on that exact admin URL. Disabled (`relative_urls: false`, `remove_script_host: false`) so the URL the media picker hands back is preserved verbatim.
 - **Media picker modal rendered underneath TinyMCE's own dialog**: TinyMCE's floating-UI root (`.tox-tinymce-aux`) sits at `z-index: 1300`, above Bootstrap's default modal stack (1055/1050). Fixed with a dynamic boost in `media-picker.js` that reads whatever TinyMCE UI layer is actually open at that moment and stacks itself 100 above it — robust against TinyMCE's unpinned CDN version (`tinymce@7` = latest 7.x) shifting that number later, unlike a static CSS override.
 
-> Migration `007_dev_tenant_header_tagline.sql` (dev-tenant tenant only, additive): adds a `header-tagline` field to `site-settings` so the FrontendSite header tagline is CMS-managed instead of hardcoded in the frontend's `.resx` files (which remain as a fallback if the field is left empty).
+> Migration `007` (one tenant only, additive): adds a `header-tagline` field to `site-settings` so the consumer frontend's header tagline is CMS-managed instead of hardcoded in the frontend's `.resx` files (which remain as a fallback if the field is left empty).
 
 ## [1.4.3] - 2026-07-06
 
@@ -88,16 +88,16 @@ Reviewed everything added since the v1.3.0 audit (submission inbox, `increment-v
 - **Public API view-count increment**: `POST /api/v1/{tenant}/{contentTypeSlug}/{id}/increment-view` atomically does `value_number = value_number + 1` on the item's `view-count` field in a single statement (no read-modify-write race). Bound to **read** permission (a benign analytics side-effect of reading), so no new verb flag or `allow_update` is required. Deliberately not audited (high-frequency) and does not invalidate the response cache (counts may lag by the cache TTL — acceptable for a counter).
 - Migration `005_inbox_and_notify.sql` (additive, idempotent): the two columns above + a filtered `IX_content_items_unread` index + the inbox UI translation keys. Test projects (integration + UI) now include `005` so repository queries against the new columns pass.
 
-> **Frontend (separate FrontendSite repo):** the blog detail page now triggers the view-count increment once per unique visitor, deduplicated by `IP + slug` via `IMemoryCache` (a 6-hour window, so refreshes don't recount; `X-Forwarded-For`-aware for proxies). The contact form (wired in 1.3.x) posts submissions that now land as unread inbox items and fire the notification email.
+> **Frontend (separate consumer repo):** the blog detail page now triggers the view-count increment once per unique visitor, deduplicated by `IP + slug` via `IMemoryCache` (a 6-hour window, so refreshes don't recount; `X-Forwarded-For`-aware for proxies). The contact form (wired in 1.3.x) posts submissions that now land as unread inbox items and fire the notification email.
 
 ---
 
 ## [1.3.1] - 2026-07-02
 
 ### Added
-- **`contact-message` content type (dev seed)**: new additive migration `db/migrations/004_contact_messages.sql` creates a contact-message content type for the `dev-tenant` tenant (fields: `name`, `email`, `subject`, `message`) so the FrontendSite frontend contact form can store submissions in the CMS. Exposed via a **create-only** public API config (`allow_create=1`, read/update/delete off, `is_public=0`, `rate_limit=20/min`) and granted to the existing Tenant API key. Idempotent + additive (does not reset); run after `003`.
+- **`contact-message` content type (dev seed)**: new additive migration `db/migrations/004_contact_messages.sql` creates a contact-message content type for a tenant (fields: `name`, `email`, `subject`, `message`) so a consumer frontend's contact form can store submissions in the CMS. Exposed via a **create-only** public API config (`allow_create=1`, read/update/delete off, `is_public=0`, `rate_limit=20/min`) and granted to the existing frontend API key. Idempotent + additive (does not reset); run after `003`.
 
-> Frontend wiring (ContactController POST → `SubmitContactMessageAsync`, antiforgery + PRG, honeypot/timestamp anti-spam) lives in the separate FrontendSite repository.
+> Frontend wiring (ContactController POST → `SubmitContactMessageAsync`, antiforgery + PRG, honeypot/timestamp anti-spam) lives in the separate consumer frontend repository.
 
 ---
 
@@ -118,7 +118,7 @@ Full audit pass (SQL injection, tenant isolation, CSRF, XSS, authz/IDOR, upload,
 - **User-permission content-type validation (Low)**: `UserService.SavePermissionsAsync` drops permission rows referencing content types that don't belong to the tenant instead of persisting orphan grants.
 
 ### Chore
-- `003_dev_tenant_seed.sql` (dev-only): the 14 blog posts' `body` fields were expanded from single-paragraph stubs into full multi-section articles (H2/H3 headings, code blocks, lists) in both `tr` and `en`, so the frontend table-of-contents (derived from `<h2>`/`<h3>`) renders meaningfully.
+- `003` tenant seed (dev-only): the 14 blog posts' `body` fields were expanded from single-paragraph stubs into full multi-section articles (H2/H3 headings, code blocks, lists) in both `tr` and `en`, so the frontend table-of-contents (derived from `<h2>`/`<h3>`) renders meaningfully.
 
 ---
 
@@ -136,14 +136,14 @@ Full audit pass (SQL injection, tenant isolation, CSRF, XSS, authz/IDOR, upload,
 - **`[AllowAnonymous]` on error page** (`HomeController.Error`): Error action was behind the global `[Authorize]` filter, causing authenticated-only error pages in production.
 - **`TrustServerCertificate=False`** in `appsettings.Production.json`: Was incorrectly `True`.
 - **JWT `SigningKey` placeholder**: Production config now uses `SET_VIA_ENV_Jwt__SigningKey` to signal the env-var pattern instead of a literal placeholder.
-- **Test isolation**: Integration and UI test projects now copy only `001_v1_schema.sql` + `002_v1_dev_seed.sql`; the `003_dev_tenant_seed.sql` dev reset seed is excluded so `dev-tenant` exists for all test fixtures.
+- **Test isolation**: Integration and UI test projects now copy only `001_v1_schema.sql` + `002_v1_dev_seed.sql`; the `003` tenant seed dev reset seed is excluded so `dev-tenant` exists for all test fixtures.
 
 ### Changed
 - `AllowedHosts` restricted from `"*"` to `"localhost;127.0.0.1;[::1]"` in `appsettings.json` (development); override for production domains via environment variable.
 - `appsettings.Production.json` added to `.gitignore` — no longer tracked after this release.
 
 ### Chore
-- `003_dev_tenant_seed.sql` (dev-only): 13 content types (`site-settings`, `category`, `series`, `post`, `video`, `about`, `video-list`, `experience`, `education`, `skill-group`, `book`, `movie`, `activity`), ApiKey auth, 14 posts, 8 videos, series Relation, `youtubeId` field, `site-settings` singleton for social links.
+- `003` tenant seed (dev-only): 13 content types (`site-settings`, `category`, `series`, `post`, `video`, `about`, `video-list`, `experience`, `education`, `skill-group`, `book`, `movie`, `activity`), ApiKey auth, 14 posts, 8 videos, series Relation, `youtubeId` field, `site-settings` singleton for social links.
 
 ---
 

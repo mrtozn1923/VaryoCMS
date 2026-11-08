@@ -287,7 +287,7 @@ db/migrations/
                               a TenantAdmin user, and demo content types/items.
 
 db/tenant-seeds/
-└── dev-tenant-seed.sql      — Real content for the author's own "Mert Özen" tenant. NOT part of
+└── <tenant>-seed.sql       — (git-ignored) real content for one specific tenant. NOT part of
                               the migration chain and NOT applied by the test suite — it targets
                               a specific production tenant, applied manually.
 ```
@@ -299,7 +299,7 @@ db/tenant-seeds/
 > For new platform migrations, add numbered files: `004_<description>.sql`, `005_<description>.sql`,
 > etc. Keep environment-specific tenant content (real customer/demo data for one particular
 > tenant) out of `db/migrations/` — put it in `db/tenant-seeds/` instead, following the
-> `dev-tenant-seed.sql` pattern, so it doesn't get picked up by the test suite or a fresh clone.
+> git-ignored `<tenant>-seed.sql` pattern, so it doesn't get picked up by the test suite or a fresh clone.
 
 ### ui_cultures / ui_translations  (root tables — no tenant_id; global admin-UI i18n, SystemAdmin-managed)
 ```sql

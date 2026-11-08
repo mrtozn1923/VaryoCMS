@@ -24,7 +24,7 @@ POST   /api/v1/{tenantSlug}/{contentTypeSlug}/{id}/increment-view  — requires 
   view count may lag by up to the config's `cache_seconds` (acceptable for a counter).
 - The item must have a field with slug `view-count`; otherwise `404`.
 
-> **Consumer note (FrontendSite):** the blog frontend calls this once per unique visitor, deduplicated
+> **Consumer note (example frontend):** the blog frontend calls this once per unique visitor, deduplicated
 > by `IP + slug` (in-memory, 6-hour window) so refreshes don't recount. Because the increment fires
 > *after* the page reads the count, a visitor never sees their own view reflected on the page they
 > just loaded — it appears on a later view once caches expire.
@@ -222,7 +222,7 @@ A single API Key can cover multiple content types. Each content type has its own
 
 - `api_field_visibility.is_visible = false` → field excluded from response
 - `api_field_visibility.response_key_alias` → rename field in JSON; enter as kebab-case, stored as-is, output as camelCase
-- **A field with no `api_field_visibility` row is invisible, not visible** — `GetVisibleFieldsAsync` `INNER JOIN`s from `api_field_visibility`, so a missing row excludes the field entirely. In practice this rarely bites because the admin's Configure page (`/admin/api-management/{contentTypeId}/configure`) does a full `DELETE` + re-`INSERT` of visibility rows for every field on the content type on every save — so a field added via the Field Builder *after* the last Configure save stays hidden from the API until a TenantAdmin revisits Configure and saves again (even without changing anything). A field added directly via SQL (bypassing both the Field Builder and Configure) needs its own `api_field_visibility` row inserted manually — see the `header-tagline` section of `db/tenant-seeds/dev-tenant-seed.sql` for the pattern.
+- **A field with no `api_field_visibility` row is invisible, not visible** — `GetVisibleFieldsAsync` `INNER JOIN`s from `api_field_visibility`, so a missing row excludes the field entirely. In practice this rarely bites because the admin's Configure page (`/admin/api-management/{contentTypeId}/configure`) does a full `DELETE` + re-`INSERT` of visibility rows for every field on the content type on every save — so a field added via the Field Builder *after* the last Configure save stays hidden from the API until a TenantAdmin revisits Configure and saves again (even without changing anything). A field added directly via SQL (bypassing both the Field Builder and Configure) needs its own `api_field_visibility` row inserted manually — insert one row per visible field with the same columns the Configure page writes.
 - Relation fields expand to `{ id, displayValue }` by default
 
 ---

@@ -347,16 +347,16 @@ db/migrations/
                               + a read-only API credential.
 
 db/tenant-seeds/
-└── dev-tenant-seed.sql      — Real content for the author's own "Mert Özen" tenant (consumed by
-                              the FrontendSite frontend). Not part of the standard migration
-                              chain, not applied by tests — apply manually, environment-specific.
+└── <tenant>-seed.sql       — (git-ignored) environment-specific content for one real tenant.
+                              Not part of the standard migration chain, not applied by tests —
+                              apply manually; keep it out of version control.
 ```
 
 **Production:** run `001_v1_schema.sql` + `002_v1_system_seed.sql`, then sign into `/system/login`
 and create your own tenant(s) and content types. Skip `003_v1_demo_seed.sql` (dev-only demo data).
 For new platform migrations, add `004_<description>.sql`, `005_<description>.sql`, etc. — keep
 one-off, environment-specific tenant content out of `db/migrations/` (put it in
-`db/tenant-seeds/` instead, following the `dev-tenant-seed.sql` pattern).
+`db/tenant-seeds/` instead — that folder's `*.sql` files are git-ignored).
 
 ---
 

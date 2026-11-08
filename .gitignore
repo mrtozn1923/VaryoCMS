@@ -38,3 +38,9 @@ src/VaryoCms.Web/wwwroot/uploads/
 # Security scan outputs (transient)
 semgrep-report.json
 trufflehog-*.json
+
+# Environment-specific tenant content (real data for one tenant) — keep local, never commit
+db/tenant-seeds/*.sql
+
+# Personal working notes for the AI assistant (referenced from CLAUDE.md) — keep local
+docs/prompts/current-task.md
