@@ -164,16 +164,23 @@ public class PublicApiRepository : BaseRepository, IPublicApiRepository
     }
 
     public async Task<IReadOnlyList<ContentFieldValue>> GetValuesAsync(
-        int tenantId, IReadOnlyList<int> itemIds, string lang, CancellationToken ct = default)
+        int tenantId, IReadOnlyList<int> itemIds, string lang, IReadOnlyCollection<int>? fieldIds,
+        CancellationToken ct = default)
     {
         if (itemIds.Count == 0) return Array.Empty<ContentFieldValue>();
+        // Projection selected no stored fields (e.g. only relations/media that need no value rows
+        // or unknown keys) → nothing to read.
+        if (fieldIds is not null && fieldIds.Count == 0) return Array.Empty<ContentFieldValue>();
+
+        // Field filter is only added when a projection is given; Dapper expands @FieldIds to IN (...).
+        string fieldFilter = fieldIds is null ? string.Empty : " AND content_field_id IN @FieldIds";
 
         using var conn = CreateConnection();
         var command = new CommandDefinition(
             $@"SELECT {ValueColumns} FROM content_field_values
                WHERE tenant_id = @TenantId AND content_item_id IN @Ids
-                 AND language_code IN (@Lang, 'all')",
-            new { TenantId = tenantId, Ids = itemIds, Lang = lang },
+                 AND language_code IN (@Lang, 'all'){fieldFilter}",
+            new { TenantId = tenantId, Ids = itemIds, Lang = lang, FieldIds = fieldIds },
             cancellationToken: ct);
         var rows = await conn.QueryAsync<ContentFieldValue>(command);
         return rows.AsList();

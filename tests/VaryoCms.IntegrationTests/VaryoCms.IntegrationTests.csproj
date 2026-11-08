@@ -37,6 +37,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>migrations\003_v1_demo_seed.sql</Link>
     </Content>
+    <Content Include="..\..\db\migrations\004_public_api_list_index.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>migrations\004_public_api_list_index.sql</Link>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

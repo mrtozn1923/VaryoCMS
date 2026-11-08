@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.3] - 2026-11-08
+
+### Performance
+- **Public API `fields=` projection is now applied before the database read**: previously every visible field value (including large rich-text bodies) was loaded for each list item and only dropped from the response. `PublicApiService.BuildItemsAsync` now narrows the visible fields first and `IPublicApiRepository.GetValuesAsync` takes the projected field ids (`content_field_id IN @FieldIds`); relations and media are expanded only for projected fields. A blog list of ~800 posts no longer reads every post body.
+- **New index for public list queries** (`db/migrations/004_public_api_list_index.sql`, idempotent): `IX_content_items_public_list (tenant_id, content_type_id, status, created_at) WHERE is_deleted = 0` — serves the list filter and the default sort.
+
+### Tests
+- Unit tests for the projection push-down (only projected ids loaded; no projection → all fields; unknown keys → no value read).
+
 ## [1.5.2] - 2026-07-11
 
 ### Fixed

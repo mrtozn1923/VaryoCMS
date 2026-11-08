@@ -20,8 +20,11 @@ public interface IPublicApiRepository
     Task<ContentItem?> GetItemByIdAsync(int tenantId, int contentTypeId, int id, string lang, CancellationToken ct = default);
     Task<ContentItem?> GetItemBySlugAsync(int tenantId, int contentTypeId, string slug, string lang, CancellationToken ct = default);
 
+    // fieldIds: when not null, only these fields' values are loaded (response projection — e.g. a list
+    // that does not need the large body field must not read it from the database either).
     Task<IReadOnlyList<ContentFieldValue>> GetValuesAsync(
-        int tenantId, IReadOnlyList<int> itemIds, string lang, CancellationToken ct = default);
+        int tenantId, IReadOnlyList<int> itemIds, string lang, IReadOnlyCollection<int>? fieldIds,
+        CancellationToken ct = default);
 
     // Relation rows (ordered) for the given source items — for expanding Relation/MultiRelation fields.
     Task<IReadOnlyList<(int SourceItemId, int SourceFieldId, int TargetItemId)>> GetRelationsAsync(

@@ -222,8 +222,20 @@ public class PublicApiService : IPublicApiService
     {
         if (items.Count == 0) return Array.Empty<ApiItemDto>();
 
+        // Apply the `fields=` projection BEFORE loading: only the requested fields' values, relations
+        // and media are read from the database (previously every field — including large rich-text
+        // bodies — was loaded and only filtered out of the response).
+        HashSet<string>? projection = ParseProjection(fields);
+        if (projection is not null)
+            visibleFields = visibleFields
+                .Where(f => projection.Contains(ExternalKey(f.Field.Slug, f.Alias)))
+                .ToList();
+        IReadOnlyCollection<int>? fieldIds = projection is null
+            ? null
+            : visibleFields.Where(f => !IsRelation(f.Field.FieldType)).Select(f => f.Field.Id).ToList();
+
         var itemIds = items.Select(i => i.Id).ToList();
-        var values = await _repo.GetValuesAsync(tenantId, itemIds, lang, ct);
+        var values = await _repo.GetValuesAsync(tenantId, itemIds, lang, fieldIds, ct);
 
         // item id -> (field id -> value), preferring the requested language over the 'all' fallback.
         var valuesByItem = values
@@ -239,8 +251,6 @@ public class PublicApiService : IPublicApiService
         // Media/Gallery expansion: resolve all referenced media ids to web paths in one query.
         var mediaUrls = await LoadMediaUrlsAsync(tenantId, items, valuesByItem, visibleFields, ct);
 
-        HashSet<string>? projection = ParseProjection(fields);
-
         return items.Select(item =>
         {
             valuesByItem.TryGetValue(item.Id, out var fieldValues);
@@ -248,7 +258,6 @@ public class PublicApiService : IPublicApiService
 
             foreach (var (field, alias) in visibleFields)
             {
-                if (projection is not null && !projection.Contains(ExternalKey(field.Slug, alias))) continue;
                 string key = ExternalKey(field.Slug, alias);
 
                 if (IsRelation(field.FieldType))

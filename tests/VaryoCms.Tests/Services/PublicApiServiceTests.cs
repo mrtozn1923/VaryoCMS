@@ -44,7 +44,8 @@ public class PublicApiServiceTests
             .Returns(fields ?? new List<(ContentField, string?)>());
         _repo.GetItemsAsync(Arg.Any<ApiItemQuery>(), Arg.Any<CancellationToken>())
             .Returns(((IReadOnlyList<ContentItem>)(items ?? new List<ContentItem>()), items?.Count ?? 0));
-        _repo.GetValuesAsync(Arg.Any<int>(), Arg.Any<IReadOnlyList<int>>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _repo.GetValuesAsync(Arg.Any<int>(), Arg.Any<IReadOnlyList<int>>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyCollection<int>?>(), Arg.Any<CancellationToken>())
             .Returns(new List<ContentFieldValue>());
         return config;
     }
@@ -191,5 +192,67 @@ public class PublicApiServiceTests
         var json = JsonSerializer.Serialize(r.Value!.Data[0].Fields["category"]);
         Assert.Contains("\"id\":5", json);
         Assert.Contains("Technology", json);
+    }
+
+    // --- fields= projection is pushed down to the value query -------------------------------
+
+    private static readonly ContentField TitleField = new() { Id = 31, Slug = "title", FieldType = FieldType.Text };
+    private static readonly ContentField BodyField = new() { Id = 32, Slug = "body", FieldType = FieldType.RichText };
+
+    [Fact]
+    public async Task Fields_projection_loads_only_requested_field_values()
+    {
+        var item = new ContentItem { Id = 1, Slug = "post", Status = "published" };
+        HappyPath(isPublic: true,
+            fields: new List<(ContentField, string?)> { (TitleField, null), (BodyField, null) },
+            items: new List<ContentItem> { item });
+        _repo.GetValuesAsync(1, Arg.Any<IReadOnlyList<int>>(), "tr",
+                Arg.Any<IReadOnlyCollection<int>?>(), Arg.Any<CancellationToken>())
+            .Returns(new List<ContentFieldValue>
+            {
+                new() { ContentItemId = 1, ContentFieldId = 31, LanguageCode = "tr", ValueText = "Hello" }
+            });
+
+        var r = await Sut().GetListAsync("acme", "blog", new ApiListRequest { Fields = "title" }, NoCreds);
+
+        Assert.True(r.IsSuccess);
+        // The large body field is not read from the database at all...
+        await _repo.Received(1).GetValuesAsync(1, Arg.Any<IReadOnlyList<int>>(), "tr",
+            Arg.Is<IReadOnlyCollection<int>?>(ids => ids != null && ids.Count == 1 && ids.Contains(31)),
+            Arg.Any<CancellationToken>());
+        // ...and the response carries only the projected key.
+        Assert.Equal(new[] { "title" }, r.Value!.Data[0].Fields.Keys);
+    }
+
+    [Fact]
+    public async Task Without_fields_all_visible_field_values_are_loaded()
+    {
+        var item = new ContentItem { Id = 1, Slug = "post", Status = "published" };
+        HappyPath(isPublic: true,
+            fields: new List<(ContentField, string?)> { (TitleField, null), (BodyField, null) },
+            items: new List<ContentItem> { item });
+
+        var r = await Sut().GetListAsync("acme", "blog", new ApiListRequest(), NoCreds);
+
+        Assert.True(r.IsSuccess);
+        await _repo.Received(1).GetValuesAsync(1, Arg.Any<IReadOnlyList<int>>(), "tr",
+            Arg.Is<IReadOnlyCollection<int>?>(ids => ids == null), Arg.Any<CancellationToken>());
+        Assert.Equal(new[] { "title", "body" }, r.Value!.Data[0].Fields.Keys);
+    }
+
+    [Fact]
+    public async Task Projection_with_only_unknown_keys_reads_no_values()
+    {
+        var item = new ContentItem { Id = 1, Slug = "post", Status = "published" };
+        HappyPath(isPublic: true,
+            fields: new List<(ContentField, string?)> { (TitleField, null), (BodyField, null) },
+            items: new List<ContentItem> { item });
+
+        var r = await Sut().GetListAsync("acme", "blog", new ApiListRequest { Fields = "nope" }, NoCreds);
+
+        Assert.True(r.IsSuccess);
+        await _repo.Received(1).GetValuesAsync(1, Arg.Any<IReadOnlyList<int>>(), "tr",
+            Arg.Is<IReadOnlyCollection<int>?>(ids => ids != null && ids.Count == 0), Arg.Any<CancellationToken>());
+        Assert.Empty(r.Value!.Data[0].Fields);
     }
 }
