@@ -175,6 +175,11 @@ GO
 CREATE NONCLUSTERED INDEX IX_content_items_unread ON content_items (tenant_id, content_type_id) WHERE is_read = 0 AND is_deleted = 0;
 GO
 
+-- Public API list query: tenant + content type + status filter, default created_at order (v1.5.3; existing DBs: 004)
+CREATE NONCLUSTERED INDEX IX_content_items_public_list ON content_items (tenant_id, content_type_id, status, created_at)
+    INCLUDE (slug, published_at, updated_at, created_by, updated_by) WHERE is_deleted = 0;
+GO
+
 -- EAV: actual data; no soft-delete per schema
 -- Note: value_media_id FK -> media_assets added after media_assets is created (see below)
 CREATE TABLE content_field_values (
